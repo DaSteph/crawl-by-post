@@ -10,6 +10,7 @@ import { spotlightHolder } from './turns.ts';
 import { doorways, movesFor, type Moves } from './movement.ts';
 import { conditionOf, isDying, type Condition } from './monsters.ts';
 import type { AttackOption } from '../dungeon/model.ts';
+import { burningLights, flameLevel, inDarkness, isLit, type AreaLight, type FlameLevel } from './light.ts';
 
 /** A monster listed for an area in the dungeon file. `index` is what the GM places it by. */
 export type MapMonster = { index: number; label: string; name: string; count: string };
@@ -30,6 +31,10 @@ export type MapArea = {
 	rect: Rect;
 	name: string | null;
 	revealed: boolean;
+	/** False when no light burns here. Drawn hatched. */
+	lit: boolean;
+	/** The GM's light ruling for the area; always null for players. */
+	lightOverride: AreaLight | null;
 	/** GM only; null for players. */
 	mood: string | null;
 	notes: string | null;
@@ -48,7 +53,17 @@ export type MapToken = {
 	spotlight: boolean;
 	/** True at 0 HP. */
 	dying: boolean;
+	/** True when the character carries a burning light source. */
+	carriesLight: boolean;
+	/** True when the character stands in an area without light. */
+	dark: boolean;
 };
+
+/**
+ * A burning light source in the torch tracker. Everyone sees its flame level;
+ * the exact counter is the GM's, and null for players.
+ */
+export type MapLight = { id: number; seat: number; kind: 'torch'; level: FlameLevel; counter: number | null };
 
 /**
  * An unknown area behind a doorway, drawn as a dashed "?" on its first square.
@@ -63,6 +78,7 @@ export type MapView = {
 	tokens: MapToken[];
 	monsters: MapMonsterToken[];
 	unknown: MapUnknown[];
+	lights: MapLight[];
 	/** Where the viewer can move their token now; null unless they hold the spotlight. */
 	moves: Moves | null;
 };
@@ -83,6 +99,8 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 			rect: a.rect,
 			name: t(a.name),
 			revealed: revealed.has(a.id),
+			lit: isLit(state, a.id),
+			lightOverride: gm ? (state.areaLight?.[a.id] ?? null) : null,
 			mood: gm ? t(a.mood) : null,
 			notes: gm ? t(a.notes) : null,
 			monsters: gm
@@ -106,7 +124,9 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 						area: p.position.area,
 						cell: p.position.cell,
 						spotlight: holder === p.seat,
-						dying: isDying(p)
+						dying: isDying(p),
+						carriesLight: (p.lights?.length ?? 0) > 0,
+						dark: inDarkness(state, p.seat)
 					}
 				]
 			: []
@@ -131,7 +151,16 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 	}));
 	const moves = !gm && seat !== undefined ? movesFor(state, dungeon, seat) : null;
 
-	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, moves };
+	// Light is table knowledge, wherever its carrier is; only the counter is secret.
+	const lights: MapLight[] = burningLights(state).map(({ seat, light }) => ({
+		id: light.id,
+		seat,
+		kind: light.kind,
+		level: flameLevel(light.counter),
+		counter: gm ? light.counter : null
+	}));
+
+	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, lights, moves };
 }
 
 /** Players see exits of revealed areas; a secret one only once both its sides are revealed (found). */

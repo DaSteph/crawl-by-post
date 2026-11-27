@@ -8,6 +8,7 @@
 	import type { Moves } from '#lib/engine/movement.ts';
 	import MonsterPanel from '#lib/monsters/MonsterPanel.svelte';
 	import HpChanges from '#lib/monsters/HpChanges.svelte';
+	import TorchTracker from '#lib/light/TorchTracker.svelte';
 	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
 	import Compose from '#lib/turn/Compose.svelte';
 	import Log from '#lib/turn/Log.svelte';
@@ -47,6 +48,8 @@
 	const ownToken = $derived(
 		visitor.role === 'player' ? (mapView?.tokens.find((t) => t.seat === visitor.seat) ?? null) : null
 	);
+	/** Seats standing in an area without light. */
+	const darkSeats = $derived(mapView?.tokens.filter((t) => t.dark).map((t) => t.seat) ?? []);
 	const focusCell = $derived(ownToken?.cell ?? mapView?.tokens.find((t) => t.spotlight)?.cell ?? null);
 
 	function areaName(id: string) {
@@ -286,6 +289,18 @@
 				</ul>
 			</div>
 		{/if}
+		<p class="muted small">{text.map.darkHint}</p>
+		{#if me !== null}
+			<TorchTracker
+				lights={data.map.view.lights}
+				tokens={data.map.view.tokens}
+				{nameOf}
+				{me}
+				canLight={Boolean(ownSheet) && !ownToken?.carriesLight}
+				error={form?.lightError ?? null}
+				errorFor={form?.lightId ?? null}
+			/>
+		{/if}
 		{#if data.map.view.moves}
 			<p class="small" role="status">{moving ? text.map.moving : text.map.moveHint}</p>
 		{/if}
@@ -399,6 +414,7 @@
 					sheet={challengeSheet}
 					preConsent={spotlight.preConsent ?? false}
 					monsters={mapView?.monsters ?? []}
+					dark={darkSeats.includes(challengeSheet.seat)}
 					error={form?.challengeError ?? null}
 				/>
 			</details>
@@ -422,6 +438,7 @@
 			sheets={data.sheets}
 			gmTurn={spotlight?.kind === 'gm'}
 			defaultSeat={spotlight?.kind === 'gm' ? spotlight.afterSeat : null}
+			{darkSeats}
 			moving={movingMonster}
 			onmove={(id) => (movingMonster = id)}
 			error={form?.monsterError ?? null}
@@ -553,18 +570,43 @@
 {#if visitor.role === 'gm' && data.map.ok}
 	<section class="card stack">
 		<h2>{text.map.areas}</h2>
+		{#if form?.areaLightError}
+			<p class="error" role="alert">{form.areaLightError}</p>
+		{/if}
 		<ul class="stack-sm">
 			{#each data.map.view.areas as area (area.id)}
 				<li>
 					<details>
 						<summary>
 							<span>{area.name ?? text.map.corridor(area.id)}</span>
-							<span class="muted small">{area.id} · {area.revealed ? text.map.revealed : text.map.hidden}</span>
+							<span class="muted small"
+								>{area.id} · {area.revealed ? text.map.revealed : text.map.hidden} · {area.lit
+									? text.light.lit
+									: text.light.dark}</span
+							>
 						</summary>
 						<div class="row wrap">
 							{@render revealForm(area)}
 							{#if !area.revealed && area.mood}<span class="muted small">{text.map.revealHint}</span>{/if}
 						</div>
+						<form method="POST" action="?/areaLight" class="stack-sm" use:enhance={() => async ({ update }) => update({ reset: false })}>
+							<input type="hidden" name="area" value={area.id} />
+							<fieldset class="pills">
+								<legend>{text.light.areaLabel}</legend>
+								{#each [['', 'auto'], ['lit', 'lit'], ['dark', 'dark']] as const as [value, key] (key)}
+									<label>
+										<input
+											type="radio"
+											name="light"
+											{value}
+											checked={(area.lightOverride ?? '') === value}
+											onchange={(e) => e.currentTarget.form?.requestSubmit()}
+										/><span>{text.light.overrides[key]}</span>
+									</label>
+								{/each}
+							</fieldset>
+							<p class="muted small">{text.light.overrideHint}</p>
+						</form>
 						<dl>
 							{#if area.mood}
 								<dt>{text.map.mood}</dt>
@@ -832,6 +874,47 @@
 		border: 2px solid var(--ink);
 		border-radius: var(--radius);
 		padding: 0 12px 12px;
+	}
+	.pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.pills legend {
+		width: 100%;
+		margin-bottom: 4px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--ink-2);
+	}
+	.pills label {
+		position: relative;
+	}
+	.pills input {
+		position: absolute;
+		opacity: 0;
+		inset: 0;
+		margin: 0;
+		cursor: pointer;
+	}
+	.pills span {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--tap);
+		padding: 0 12px;
+		border: 1.5px solid var(--ink);
+		border-radius: 999px;
+		font-weight: 600;
+	}
+	.pills input:checked + span {
+		background: var(--ink);
+		color: var(--paper);
+	}
+	.pills input:focus-visible + span {
+		outline: 3px solid var(--focus);
+		outline-offset: 2px;
 	}
 	.mood {
 		border-left: 3px solid var(--ink);

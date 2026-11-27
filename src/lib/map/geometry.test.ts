@@ -3,7 +3,7 @@ import type { MapArea, MapExit } from '../engine/map.ts';
 import { mapGeometry } from './geometry.ts';
 
 function area(id: string, rect: MapArea['rect'], revealed = true): MapArea {
-	return { id, kind: 'room', rect, name: id, revealed, mood: null, notes: null, monsters: [] };
+	return { id, kind: 'room', rect, name: id, revealed, lit: true, lightOverride: null, mood: null, notes: null, monsters: [] };
 }
 
 describe('map geometry', () => {

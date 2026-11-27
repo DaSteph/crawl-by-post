@@ -63,6 +63,18 @@ import {
 	type SetCharacterHp,
 	type SetMonsterHp
 } from './monsters.ts';
+import {
+	burnLights,
+	lightTorch,
+	setAreaLight,
+	setLightCounter,
+	type AreaLight,
+	type FlameLevel,
+	type LightSource,
+	type LightTorch,
+	type SetAreaLight,
+	type SetLightCounter
+} from './light.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -91,6 +103,8 @@ export type PlayerSlot = {
 	hp?: number;
 	inventory?: string;
 	position?: Position;
+	/** Burning light sources the character carries. */
+	lights?: LightSource[];
 };
 
 /** A character card as a participant sees it. */
@@ -128,6 +142,9 @@ export type SessionState = {
 	/** Damage waiting for the GM to confirm. */
 	hpChanges?: HpChange[];
 	lastHpChangeId?: number;
+	lastLightId?: number;
+	/** The GM's light rulings per area id. Areas without one are lit by carried light. */
+	areaLight?: Record<string, AreaLight>;
 };
 
 export type Command =
@@ -157,7 +174,10 @@ export type Command =
 	| ConfirmHpChange
 	| DismissHpChange
 	| MonsterAttack
-	| SetCharacterHp;
+	| SetCharacterHp
+	| LightTorch
+	| SetLightCounter
+	| SetAreaLight;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -192,7 +212,13 @@ export type EngineEvent =
 	| { type: 'hpChangeDismissed'; id: number }
 	| { type: 'characterHpSet'; seat: number }
 	/** A character dropped to 0 HP. */
-	| { type: 'characterDying'; seat: number };
+	| { type: 'characterDying'; seat: number }
+	| { type: 'lightLit'; seat: number; id: number }
+	/** The GM changed a light's secret counter. */
+	| { type: 'lightCounterSet'; id: number }
+	| { type: 'torchLevelChanged'; seat: number; id: number; level: FlameLevel }
+	| { type: 'torchExtinguished'; seat: number; id: number }
+	| { type: 'areaLightSet'; areaId: string; light: AreaLight | null };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -231,7 +257,7 @@ export function applyCommand(
 	}
 
 	if (!state) return { ok: false, reason: 'No such session.' };
-	return keepTime(dispatch(state, command, deps), deps);
+	return keepTime(burnLights(dispatch(state, command, deps), deps), deps);
 }
 
 function dispatch(state: SessionState, command: Exclude<Command, { type: 'createSession' }>, deps: Deps): CommandResult {
@@ -284,6 +310,12 @@ function dispatch(state: SessionState, command: Exclude<Command, { type: 'create
 			return monsterAttack(state, command, deps);
 		case 'setCharacterHp':
 			return setCharacterHp(state, command, deps);
+		case 'lightTorch':
+			return lightTorch(state, command, deps);
+		case 'setLightCounter':
+			return setLightCounter(state, command, deps);
+		case 'setAreaLight':
+			return setAreaLight(state, command);
 	}
 }
 

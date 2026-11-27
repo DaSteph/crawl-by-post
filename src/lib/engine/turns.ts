@@ -6,6 +6,7 @@ import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts'
 import type { Challenge, ChallengeEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
 import type { TimeoutEntry } from './timeouts.ts';
 import type { MonsterEntry, MonsterRef } from './monsters.ts';
+import type { LightEntry } from './light.ts';
 
 export const DANGER_LEVELS = ['unsafe', 'risky', 'deadly'] as const;
 export type Danger = (typeof DANGER_LEVELS)[number];
@@ -70,6 +71,7 @@ export type LogEntry = { at: string } & (
 	| DamageEntry
 	| TimeoutEntry
 	| MonsterEntry
+	| LightEntry
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };

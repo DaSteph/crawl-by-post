@@ -26,6 +26,7 @@ import { pushAfterCommand } from './push.ts';
 import { applyTimerEvents, type TurnTimerJob } from './jobs.ts';
 import { timeoutAt, turnTimeoutHours, type TimeoutResolution } from '#lib/engine/timeouts.ts';
 import type { HpChange } from '#lib/engine/monsters.ts';
+import type { AreaLight } from '#lib/engine/light.ts';
 
 const deps: Deps = {
 	dice: (sides) => randomInt(1, sides + 1),
@@ -257,6 +258,23 @@ export async function monsterAttack(
 
 export async function setCharacterHp(sessionId: string, bySecret: string, seat: number, hp: number): Promise<CommandResult> {
 	return run(sessionId, { type: 'setCharacterHp', by: bySecret, seat, hp }, false);
+}
+
+export async function lightTorch(sessionId: string, bySecret: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'lightTorch', by: bySecret }, false);
+}
+
+export async function setLightCounter(sessionId: string, bySecret: string, id: number, counter: number): Promise<CommandResult> {
+	return run(sessionId, { type: 'setLightCounter', by: bySecret, id, counter }, false);
+}
+
+export async function setAreaLight(
+	sessionId: string,
+	bySecret: string,
+	areaId: string,
+	light: AreaLight | null
+): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setAreaLight', by: bySecret, areaId, light, dungeon }));
 }
 
 /** How much of the log a page load brings. Older entries stay in the database. */

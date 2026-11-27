@@ -160,6 +160,10 @@
 		<li class="event hurt">{text.log.characterHurt(nameOf(e.seat), e.amount)}</li>
 	{:else if e.kind === 'dying'}
 		<li class="event dying">{text.log.dying(nameOf(e.seat))}</li>
+	{:else if e.kind === 'torchLit'}
+		<li class="event">{text.log.torchLit(nameOf(e.seat))}</li>
+	{:else if e.kind === 'torchOut'}
+		<li class="event torch-out">{text.log.torchOut(nameOf(e.seat))}</li>
 	{:else if e.kind === 'declined'}
 		<li class="event">{text.log.declined(nameOf(e.seat))}</li>
 	{:else if e.kind === 'crawlStarted'}
@@ -324,7 +328,8 @@
 		padding-top: 2px;
 	}
 	.event.hurt,
-	.event.dying {
+	.event.dying,
+	.event.torch-out {
 		font-style: normal;
 		color: var(--ink);
 	}

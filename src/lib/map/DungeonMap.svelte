@@ -91,10 +91,25 @@
 		<pattern id="{uid}-grid" width={C} height={C} patternUnits="userSpaceOnUse">
 			<path d="M {C} 0 L 0 0 0 {C}" class="grid" />
 		</pattern>
+		<pattern id="{uid}-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+			<line x1="0" y1="0" x2="0" y2="6" class="hatch" />
+		</pattern>
 	</defs>
 
 	<rect x={b.x * C} y={b.y * C} width={b.w * C} height={b.h * C} class="paper" />
 	<rect x={b.x * C} y={b.y * C} width={b.w * C} height={b.h * C} fill="url(#{uid}-grid)" />
+
+	<!-- No light burns here: hatched over the grid. -->
+	{#each view.areas.filter((a) => !a.lit) as area (area.id)}
+		<rect
+			x={area.rect.x * C}
+			y={area.rect.y * C}
+			width={area.rect.w * C}
+			height={area.rect.h * C}
+			fill="url(#{uid}-hatch)"
+			class="dark"
+		/>
+	{/each}
 
 	{#each geometry.walls as wall, i (i)}
 		<line
@@ -164,7 +179,9 @@
 			role="img"
 			aria-label={(token.spotlight
 				? text.character.spotlightToken(token.initials, token.seat)
-				: text.character.token(token.initials, token.seat)) + (token.dying ? `, ${text.character.dyingToken}` : '')}
+				: text.character.token(token.initials, token.seat)) +
+				(token.dying ? `, ${text.character.dyingToken}` : '') +
+				(token.carriesLight ? `, ${text.light.carrying}` : '')}
 		>
 			{#if token.spotlight}
 				<circle r={C * 0.42} class="pulse" />
@@ -172,6 +189,13 @@
 			{/if}
 			<circle r={C * 0.42} class="disc" />
 			<text text-anchor="middle" dominant-baseline="central">{token.initials}</text>
+			{#if token.carriesLight}
+				<path
+					transform="translate({C * 0.36} {-C * 0.3}) scale(0.62)"
+					d="M0 -7 C 5 -2, 4 4, 0 4 C -4 4, -5 -1, -1 -3 C -0.5 -1, 1 -1, 0 -7 Z"
+					class="flame"
+				/>
+			{/if}
 		</g>
 	{/each}
 
@@ -295,6 +319,15 @@
 	}
 	.paper {
 		fill: var(--paper);
+	}
+	.hatch {
+		stroke: var(--hatch);
+		stroke-width: 1.4;
+	}
+	.flame {
+		fill: var(--ink);
+		stroke: var(--paper);
+		stroke-width: 0.9;
 	}
 	.grid {
 		fill: none;

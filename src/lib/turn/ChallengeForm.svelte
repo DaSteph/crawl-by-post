@@ -6,12 +6,14 @@
 	import { formatDice } from '#lib/engine/dice.ts';
 	import type { Sheet } from '#lib/engine/index.ts';
 	import type { MapMonsterToken } from '#lib/engine/map.ts';
+	import { darknessPresets } from '#lib/engine/light.ts';
 	import { text } from '#lib/text.ts';
 
 	let {
 		sheet,
 		preConsent,
 		monsters,
+		dark,
 		error
 	}: {
 		/** The character who just acted and gets the challenge. */
@@ -19,6 +21,8 @@
 		preConsent: boolean;
 		/** Monsters on the map an attack can target (the GM's view). */
 		monsters: MapMonsterToken[];
+		/** True when the character stands in darkness: disadvantage is preset. */
+		dark: boolean;
 		error: string | null;
 	} = $props();
 
@@ -32,6 +36,8 @@
 	// Preset once when the form opens: the first monster still standing.
 	let target = $state(untrack(() => monsters.find((m) => m.condition !== 'down')?.id ?? ''));
 	const targetMonster = $derived(type === 'attack' ? monsters.find((m) => m.id === target) : undefined);
+	// Preset once when the form opens; the GM changes it with one tap.
+	const edgePreset = untrack(() => darknessPresets(dark).challenge);
 </script>
 
 <form
@@ -112,9 +118,14 @@
 
 	<fieldset class="pills">
 		<legend>{t.edgeLabel}</legend>
-		<label><input type="radio" name="edge" value="" checked /><span>{t.edges.none}</span></label>
-		<label><input type="radio" name="edge" value="advantage" /><span>{t.edges.advantage}</span></label>
-		<label><input type="radio" name="edge" value="disadvantage" /><span>{t.edges.disadvantage}</span></label>
+		<label><input type="radio" name="edge" value="" checked={edgePreset === null} /><span>{t.edges.none}</span></label>
+		<label><input type="radio" name="edge" value="advantage" checked={edgePreset === 'advantage'} /><span>{t.edges.advantage}</span></label>
+		<label
+			><input type="radio" name="edge" value="disadvantage" checked={edgePreset === 'disadvantage'} /><span
+				>{t.edges.disadvantage}</span
+			></label
+		>
+		{#if dark}<p class="muted small full">{text.light.darkPreset(sheet.character.name)}</p>{/if}
 	</fieldset>
 
 	<label class="stakes">

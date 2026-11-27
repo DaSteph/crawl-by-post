@@ -131,6 +131,8 @@ describe('the dungeon map', () => {
 				rect: { x: 0, y: 0, w: 5, h: 4 },
 				name: 'Entrance hall',
 				revealed: true,
+				lit: false,
+				lightOverride: null,
 				mood: null,
 				notes: null,
 				monsters: []

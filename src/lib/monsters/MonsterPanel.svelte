@@ -4,6 +4,7 @@
 	import type { Sheet } from '#lib/engine/index.ts';
 	import { formatDice } from '#lib/engine/dice.ts';
 	import { MAX_HP } from '#lib/engine/monsters.ts';
+	import { darknessPresets } from '#lib/engine/light.ts';
 	import { text } from '#lib/text.ts';
 
 	let {
@@ -11,6 +12,7 @@
 		sheets,
 		gmTurn,
 		defaultSeat,
+		darkSeats,
 		moving,
 		onmove,
 		error,
@@ -24,6 +26,8 @@
 		gmTurn: boolean;
 		/** The preset target: the player who just acted. */
 		defaultSeat: number | null;
+		/** Characters standing in darkness: attacks against them preset advantage. */
+		darkSeats: number[];
 		/** The monster whose move is being picked on the map. */
 		moving: string | null;
 		onmove: (id: string | null) => void;
@@ -34,6 +38,16 @@
 
 	const t = text.monsters;
 	let busy = $state(false);
+
+	/** Edge value of the form ('' for neither) preset for an attack on `seat`. */
+	const presetFor = (seat: number | undefined) =>
+		darknessPresets(seat !== undefined && darkSeats.includes(seat)).monsterAttack ?? '';
+	/** Target and edge per monster, once the GM has picked something. */
+	let picks = $state<Record<string, { seat: number; edge: string }>>({});
+	function pick(id: string) {
+		const seat = picks[id]?.seat ?? defaultSeat ?? sheets[0]?.seat;
+		return picks[id] ?? { seat, edge: presetFor(seat) };
+	}
 	const submit = () => {
 		busy = true;
 		return async ({ update }: { update: (o?: { reset?: boolean }) => Promise<void> }) => {
@@ -112,19 +126,35 @@
 									<legend>{t.attackTarget}</legend>
 									{#each sheets as s (s.seat)}
 										<label>
-											<input type="radio" name="seat" value={s.seat} checked={s.seat === (defaultSeat ?? sheets[0]?.seat)} required />
+											<input
+												type="radio"
+												name="seat"
+												value={s.seat}
+												checked={s.seat === pick(m.id).seat}
+												onchange={() => (picks[m.id] = { seat: s.seat, edge: presetFor(s.seat) })}
+												required
+											/>
 											<span>{s.character.name} <span class="mod">{t.ac} {s.character.ac}</span></span>
 										</label>
 									{/each}
 								</fieldset>
 								<fieldset class="pills">
 									<legend>{text.challenge.edgeLabel}</legend>
-									<label><input type="radio" name="edge" value="" checked /><span>{text.challenge.edges.none}</span></label>
-									<label><input type="radio" name="edge" value="advantage" /><span>{text.challenge.edges.advantage}</span></label>
-									<label
-										><input type="radio" name="edge" value="disadvantage" /><span>{text.challenge.edges.disadvantage}</span
-										></label
-									>
+									{#each ['', 'advantage', 'disadvantage'] as const as edge (edge)}
+										<label
+											><input
+												type="radio"
+												name="edge"
+												value={edge}
+												checked={pick(m.id).edge === edge}
+												onchange={() => (picks[m.id] = { ...pick(m.id), edge })}
+											/><span>{text.challenge.edges[edge || 'none']}</span></label
+										>
+									{/each}
+									{#if darkSeats.includes(pick(m.id).seat)}
+										{@const target = sheets.find((s) => s.seat === pick(m.id).seat)}
+										{#if target}<p class="muted small full">{text.light.monsterDarkPreset(target.character.name)}</p>{/if}
+									{/if}
 								</fieldset>
 								<p class="muted small">{gmTurn ? t.attackHint : t.attackNotNow}</p>
 								<button class="button" disabled={busy || !gmTurn || sheets.length === 0}>{t.attackRoll}</button>
@@ -249,6 +279,9 @@
 	.pills input:focus-visible + span {
 		outline: 3px solid var(--focus);
 		outline-offset: 2px;
+	}
+	.full {
+		width: 100%;
 	}
 	.mod {
 		font-weight: 400;

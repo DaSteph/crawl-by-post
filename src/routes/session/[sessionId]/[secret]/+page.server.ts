@@ -4,6 +4,7 @@ import {
 	answerChallenge,
 	editInventory,
 	importCharacter,
+	lightTorch,
 	loadSessionView,
 	monsterAttack,
 	moveMonster,
@@ -19,7 +20,9 @@ import {
 	resolveTimeout,
 	rollDamage,
 	setAreaRevealed,
+	setAreaLight,
 	setChallenge,
+	setLightCounter,
 	setTurnTimeout,
 	startCrawl
 } from '#lib/server/sessions.ts';
@@ -221,6 +224,27 @@ export const actions: Actions = {
 		const seat = Number(form.get('seat'));
 		const result = await setCharacterHp(params.sessionId, params.secret, seat, Number(form.get('hp')));
 		if (!result.ok) return fail(400, { characterHpError: result.reason, characterHpSeat: seat });
+	},
+
+	lightTorch: async ({ params }) => {
+		const result = await lightTorch(params.sessionId, params.secret);
+		if (!result.ok) return fail(400, { lightError: result.reason });
+	},
+
+	lightCounter: async ({ params, request }) => {
+		const form = await request.formData();
+		const id = Number(form.get('id'));
+		const result = await setLightCounter(params.sessionId, params.secret, id, Number(form.get('counter')));
+		if (!result.ok) return fail(400, { lightError: result.reason, lightId: id });
+	},
+
+	/** `light` is `lit`, `dark`, or empty to let carried light decide again. */
+	areaLight: async ({ params, request }) => {
+		const form = await request.formData();
+		const value = String(form.get('light') ?? '');
+		const light = value === 'lit' || value === 'dark' ? value : null;
+		const result = await setAreaLight(params.sessionId, params.secret, String(form.get('area') ?? ''), light);
+		if (!result.ok) return fail(400, { areaLightError: result.reason });
 	},
 
 	/** `reveal` is `1` to reveal the area and `0` to hide it. */

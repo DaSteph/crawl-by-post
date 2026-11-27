@@ -67,7 +67,32 @@ export const text = {
 		monsterToken: (id: string, name: string, condition: string) => `${id}, ${name}, ${condition}`,
 		selectMonster: (id: string, name: string) => `${id}, ${name}: select to move`,
 		unnamedRoom: 'a room',
-		unnamedPassage: 'a passage'
+		unnamedPassage: 'a passage',
+		darkHint: 'Hatched areas are dark: no light burns there.'
+	},
+
+	light: {
+		title: 'Light',
+		levels: { bright: 'Bright', flickering: 'Flickering', guttering: 'Guttering' },
+		yourTorch: (level: string) => `Your torch: ${level}`,
+		torchOf: (name: string, level: string) => `${name}’s torch: ${level}`,
+		youInDarkness: 'You: in darkness',
+		inDarkness: (name: string) => `${name}: in darkness`,
+		none: 'No light burns.',
+		lightTorch: 'Light a torch',
+		lightHint: 'Take a torch from your inventory and cross it off there. It burns for a secret number of turns.',
+		carrying: 'carries a light',
+		counters: 'Torch counters',
+		countersHint: 'Only you see these. Each counter ticks once per player action; 0 puts the light out.',
+		counterLabel: (name: string) => `${name}’s torch`,
+		save: 'Save',
+		areaLabel: 'Light',
+		overrides: { auto: 'Carried light', lit: 'Always lit', dark: 'Always dark' },
+		overrideHint: 'Rule on special light here: daylight, magic, a fire.',
+		lit: 'lit',
+		dark: 'dark',
+		darkPreset: (name: string) => `🌑 ${name} is in darkness: disadvantage preset.`,
+		monsterDarkPreset: (name: string) => `🌑 ${name} is in darkness: advantage preset.`
 	},
 
 	character: {
@@ -285,6 +310,8 @@ export const text = {
 		monsterHurt: (monster: string, condition: string) => `${monster} is ${condition}.`,
 		characterHurt: (name: string, amount: number) => `${name} loses ${amount} HP.`,
 		dying: (name: string) => `${name} is dying. The GM rules on what happens.`,
+		torchLit: (name: string) => `${name} lights a torch.`,
+		torchOut: (name: string) => `${name}’s torch goes out.`,
 		readMore: 'Read more',
 		readLess: 'Show less',
 		gm: 'GM'
