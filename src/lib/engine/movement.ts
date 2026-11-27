@@ -3,11 +3,16 @@
  * the stop at the doorway of an unknown area, and the GM revealing or hiding
  * areas by hand.
  *
+ * A plain passage (a corridor segment with no mood text, notes or monsters)
+ * isn't a room to reveal: a move into one reveals it, and the plain passages
+ * joined to it, on the spot and carries on. The stop comes at the next room
+ * or at a passage with something in it.
+ *
  * Movement has no distance limit and no line of sight (spec, Out of Scope).
  * Exits are passable whatever their type: the engine doesn't track locks or
  * portcullises, the GM rules on them.
  */
-import { cellsOf, inRect, neighbour, type Cell, type Dungeon, type Exit } from '../dungeon/model.ts';
+import { cellsOf, inRect, neighbour, type Area, type Cell, type Dungeon, type Exit } from '../dungeon/model.ts';
 import type { CommandResult, Deps, Position, SessionState } from './index.ts';
 import type { LogEntry } from './turns.ts';
 import { occupiedCells } from './monsters.ts';
@@ -63,6 +68,35 @@ export function doorways(state: SessionState, dungeon: Dungeon): Doorway[] {
 		}
 	}
 	return result;
+}
+
+/** A corridor segment with nothing for the GM to describe or rule on. */
+export function isPlainPassage(area: Area): boolean {
+	return area.kind === 'corridor' && !area.mood && !area.notes && area.monsters.length === 0;
+}
+
+/**
+ * The unrevealed plain passages a move through `start` opens up: `start` itself
+ * and every plain passage joined to it through visible exits, transitively.
+ */
+function plainPassagesFrom(state: SessionState, dungeon: Dungeon, start: string): string[] {
+	const revealed = new Set(state.revealed);
+	const plain = new Set(dungeon.areas.filter(isPlainPassage).map((a) => a.id));
+	if (!plain.has(start) || revealed.has(start)) return [];
+	const found = new Set([start]);
+	const queue = [start];
+	while (queue.length) {
+		const here = queue.shift()!;
+		for (const exit of dungeon.exits) {
+			if (exit.type === 'secret') continue;
+			const other = exit.from === here ? exit.to : exit.to === here ? exit.from : null;
+			if (other && plain.has(other) && !revealed.has(other) && !found.has(other)) {
+				found.add(other);
+				queue.push(other);
+			}
+		}
+	}
+	return [...found];
 }
 
 /** Every square of a revealed area that `from` connects to, `from` included. */
@@ -135,15 +169,24 @@ export function moveToken(state: SessionState, command: MoveToken, deps: Deps): 
 	if (!canMove(state, player.seat)) return { ok: false, reason: 'You can only move on your turn.' };
 
 	const { dungeon, to } = command;
-	const reach = reachableFrom(state, dungeon, player.position);
+	let reach = reachableFrom(state, dungeon, player.position);
 	let target = reach.get(key(to));
 	let stoppedAt: string | null = null;
+	let opened: string[] = [];
 	if (!target) {
-		// A move toward an unknown area stops at the doorway in front of it.
 		const door = doorways(state, dungeon).find((d) => same(d.beyond, to) && reach.has(key(d.doorway.cell)));
 		if (!door) return { ok: false, reason: 'You can’t get there from here.' };
-		target = door.doorway;
-		stoppedAt = door.area;
+		opened = plainPassagesFrom(state, dungeon, door.area);
+		if (opened.length) {
+			// Nothing to reveal in a plain passage: open it up and walk on in.
+			state = { ...state, revealed: [...state.revealed, ...opened] };
+			reach = reachableFrom(state, dungeon, player.position);
+			target = reach.get(key(to))!;
+		} else {
+			// A move toward an unknown area stops at the doorway in front of it.
+			target = door.doorway;
+			stoppedAt = door.area;
+		}
 	}
 	if (same(target.cell, player.position.cell)) return { ok: false, reason: 'You’re already there.' };
 	if (occupied(state, player.seat).has(key(target.cell))) {
@@ -157,6 +200,7 @@ export function moveToken(state: SessionState, command: MoveToken, deps: Deps): 
 			players: state.players.map((p) => (p.seat === player.seat ? { ...p, position: target } : p))
 		},
 		events: [
+			...opened.map((areaId) => ({ type: 'areaRevealed' as const, areaId })),
 			{ type: 'tokenMoved', seat: player.seat, to: target, stoppedAt },
 			...(stoppedAt
 				? [

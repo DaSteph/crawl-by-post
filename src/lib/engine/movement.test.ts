@@ -128,6 +128,38 @@ describe('moving a token', () => {
 		expect(events[0]).toMatchObject({ stoppedAt: 'r3' });
 	});
 
+	it('walks straight into a plain passage, revealing it without a stop', () => {
+		// c2 has no mood, notes or monsters; c1 (mood) and c3 (mood) do.
+		const { state, events } = run(crawling(), move('p1', 2, 4));
+
+		expect(tokenOf(state, 1)).toMatchObject({ area: 'c2', cell: { x: 2, y: 4 } });
+		expect(state.revealed).toEqual(['r1', 'c2']);
+		expect(events).toEqual([
+			{ type: 'areaRevealed', areaId: 'c2' },
+			{ type: 'tokenMoved', seat: 1, to: { area: 'c2', cell: { x: 2, y: 4 } }, stoppedAt: null }
+		]);
+	});
+
+	it('still stops before a passage with something in it, and before a room', () => {
+		let state = run(crawling(), move('p1', 2, 4)).state;
+		const { state: stopped, events } = run(state, move('p1', 3, 7));
+
+		expect(tokenOf(stopped, 1)).toMatchObject({ area: 'c2', cell: { x: 2, y: 7 } });
+		expect(events[0]).toMatchObject({ stoppedAt: 'c3' });
+		expect(stopped.revealed).not.toContain('c3');
+	});
+
+	it('opens up a whole chain of joined plain passages in one move', () => {
+		const plainC3 = { ...dungeon, areas: dungeon.areas.map((a) => (a.id === 'c3' ? { ...a, mood: null } : a)) };
+		const { state, events } = run(crawling(), { type: 'moveToken', by: 'p1', to: { x: 2, y: 4 }, dungeon: plainC3 });
+
+		expect(state.revealed).toEqual(['r1', 'c2', 'c3']);
+		expect(events.filter((e) => e.type === 'areaRevealed')).toHaveLength(2);
+		// r3 lies behind a locked door and is a room: the next move stops in front of it.
+		const next = run(state, { type: 'moveToken', by: 'p1', to: { x: 7, y: 7 }, dungeon: plainC3 });
+		expect(next.events[0]).toMatchObject({ stoppedAt: 'r3' });
+	});
+
 	it('only passes a secret door once the GM has revealed both sides', () => {
 		let state = crawling();
 		for (const id of ['c2', 'c3', 'r3']) state = run(state, reveal(id)).state;

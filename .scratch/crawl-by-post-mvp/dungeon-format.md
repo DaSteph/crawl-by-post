@@ -65,6 +65,8 @@ Rooms and corridor segments are both **areas**. An area is what gets revealed or
 
 Segments that touch end to end (an end square orthogonally next to a square of another segment) connect openly, with no exit needed. An area touching a room is separated by a wall unless an exit is declared.
 
+**Plain passages**: a corridor segment with no `mood`, no `notes` and no monsters has nothing for the GM to describe or rule on, so a token doesn't stop in front of it. Moving into one reveals it, together with every plain passage joined to it (not through secret exits), and the token walks on in. The doorway stop comes at the next room or at a passage that has something in it. So give a passage a `mood` or `notes` (a trap, say) when the GM should get a turn before the party enters it.
+
 ## Exits
 
 An exit sits on the wall between a square of its own area and the neighbouring square on `side`, which must belong to the area named in `to`.
