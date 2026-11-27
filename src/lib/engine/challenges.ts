@@ -153,6 +153,7 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 	if (command.by !== state.gmSecret) return { ok: false, reason: 'Only the GM can set a challenge.' };
 	const spotlight = state.crawl?.spotlight;
 	if (spotlight?.kind !== 'gm') return { ok: false, reason: 'You can set a challenge in your turn.' };
+	if (spotlight.opening) return { ok: false, reason: 'Nobody has acted yet. Have the monsters act, or pass.' };
 	const seat = spotlight.afterSeat;
 	const character = state.players.find((p) => p.seat === seat)?.character;
 	if (!character) return { ok: false, reason: 'That player has no character.' };

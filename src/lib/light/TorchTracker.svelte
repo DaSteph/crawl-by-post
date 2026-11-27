@@ -95,6 +95,9 @@
 							<span class="muted small">{t.levels[light.level]}</span>
 							<button class="button secondary" disabled={busy}>{t.save}</button>
 						</form>
+						{#if light.outIn !== null}
+							<p class="small">{t.goingOut(light.outIn)}</p>
+						{/if}
 						{#if error && errorFor === light.id}
 							<p class="error" role="alert">{error}</p>
 						{/if}

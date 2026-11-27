@@ -29,6 +29,8 @@ export type PlacedMonster = {
 	hp: number;
 	maxHp: number;
 	position: Position;
+	/** The DEX modifier, for the monsters' combat initiative. Absent on tokens placed before combat existed. */
+	dex?: number;
 };
 
 /** What a log entry or challenge names a monster by. */
@@ -143,7 +145,8 @@ export function placeMonster(state: SessionState, command: PlaceMonster, deps: D
 		attacks: monster.attacks,
 		hp,
 		maxHp: hp,
-		position: { area: area.id, cell }
+		position: { area: area.id, cell },
+		dex: monster.stats.d ?? 0
 	};
 	return {
 		ok: true,

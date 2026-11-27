@@ -83,7 +83,10 @@ export const text = {
 		lightHint: 'Take a torch from your inventory and cross it off there. It burns for a secret number of turns.',
 		carrying: 'carries a light',
 		counters: 'Torch counters',
-		countersHint: 'Only you see these. Each counter ticks once per player action; 0 puts the light out.',
+		countersHint:
+			'Only you see these. Each counter ticks once per player action, in combat once per round; 0 puts the light out.',
+		goingOut: (turns: number) =>
+			turns === 1 ? 'Burnt down: goes out when the next player turn starts.' : `Burnt down: goes out in ${turns} player turns.`,
 		counterLabel: (name: string) => `${name}’s torch`,
 		save: 'Save',
 		areaLabel: 'Light',
@@ -195,7 +198,9 @@ export const text = {
 		start: 'Start crawl',
 		restartTitle: 'New crawl',
 		restartHint: 'Rerolls initiative and resets the round count.',
+		yourTurnGmOpens: 'Your turn: the monsters act first',
 		status: (danger: string, round: number) => `Crawl · ${danger} · Round ${round}`,
+		combatStatus: (round: number) => `Combat · Round ${round}`,
 		yourTurn: 'Your turn',
 		yourTurnGm: 'Your turn: respond or pass',
 		gmTurn: 'The GM’s turn',
@@ -203,6 +208,17 @@ export const text = {
 		waitingFor: (name: string) => `Waiting for ${name}`,
 		timeLeft: (hours: number) => (hours < 1 ? 'under 1 h left' : `${hours} h left`),
 		timedOut: 'timed out: the GM decides'
+	},
+
+	combat: {
+		banner: 'Combat',
+		start: 'Start combat',
+		startHint:
+			'Rolls initiative: every character d20 + DEX, the monsters once (d20 + their best DEX). If the monsters win, your turn opens the fight. Light ticks once per round, and wandering monster checks pause.',
+		endTitle: 'End combat',
+		endHint: 'Starts a new crawl right away, with fresh initiative.',
+		end: 'End combat, start crawl',
+		openingHint: 'The monsters won initiative. Have them act, then post or pass to hand on to the first player.'
 	},
 
 	wandering: {
@@ -295,6 +311,10 @@ export const text = {
 			`d20 ${d20} ${modifier < 0 ? '−' : '+'} ${Math.abs(modifier)} = ${total}`,
 		rollOff: (rolls: string) => `Tie, rolled off: ${rolls}`,
 		goesFirst: (name: string) => `${name} goes first.`,
+		monstersInitiative: 'Monsters',
+		monstersFirst: (name: string) => `The monsters go first, then ${name}.`,
+		combatStarted: '⚔️ Combat! Light now burns down once per round.',
+		combatEnded: 'The fight is over.',
 		round: (n: number) => `Round ${n}`,
 		pass: 'The GM passes.',
 		autoPass: 'The GM’s turn timed out and passes on.',
@@ -360,6 +380,7 @@ export const text = {
 	push: {
 		yourTurn: 'Your turn. What do you do?',
 		gmTurn: (name: string) => `${name} acted. Respond or pass.`,
+		gmOpens: 'Combat! The monsters won initiative: your turn opens the fight.',
 		challenge: 'The GM sets a challenge for you. Roll or back out.',
 		damage: 'Hit! Roll your damage.',
 		reminder: (body: string) => `Reminder: ${body}`,

@@ -4,11 +4,22 @@
 
 **Blocked by:** 09, 10, 11
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] "Start combat" rolls initiative for characters and once for the monster side, with results locked in the log
-- [ ] The combat indicator is visible to everyone and doesn't rely on colour alone
-- [ ] Engine tests: in combat, light sources tick once per round
-- [ ] Engine tests: a counter that runs out is detected on the GM turn, and the light goes out on a random later player turn (deterministic with the injected roller)
-- [ ] Wandering monster checks pause during combat
-- [ ] "End combat" starts a new crawl with fresh initiative and a danger level choice
+- [x] "Start combat" rolls initiative for characters and once for the monster side, with results locked in the log
+- [x] The combat indicator is visible to everyone and doesn't rely on colour alone
+- [x] Engine tests: in combat, light sources tick once per round
+- [x] Engine tests: a counter that runs out is detected on the GM turn, and the light goes out on a random later player turn (deterministic with the injected roller)
+- [x] Wandering monster checks pause during combat
+- [x] "End combat" starts a new crawl with fresh initiative and a danger level choice
+
+## Comments
+
+**Agent (2026-11-27):** Implemented. Engine tests in `src/lib/engine/combat.test.ts` cover: initiative for characters plus one monster roll, all in the log; the monsters' DEX from the map; the monsters winning (GM opens) and a tie (characters win); the opening GM turn handing on without counting a round, then round 1 counting normally, and no challenge in it; light ticking once per round and not per action; a counter running out on the GM's pass, staying lit (guttering for players, `counter 0` and `outIn` for the GM) and going out at the start of the random later player turn, including the very next one; the GM calling it off with a new counter; a burnt-down light still going out after the fight; per-action ticks again after the fight; wandering checks paused, and a waiting check dropped; end combat starting a new crawl with fresh initiative and the chosen danger, wandering checks coming back; all rejections. Smoke-tested against the dev database through the form actions: start combat out of turn and as a player rejected; start crawl in combat rejected; a torch at 1 ran out at the end of round 1 (`outIn` 2) and went out when player 2's turn started; no wandering check in a deadly fight; end combat → unsafe crawl; banner and "Combat · Round N" rendered for GM and player, "End combat" only in the GM's turn, "Start combat" and "New crawl" only outside combat. Not looked at on a real phone yet.
+
+- **Monster initiative** (decided with the user): d20 + the best DEX modifier among the monsters on the map (0 if none). If it beats every character, the GM's turn opens the fight; characters win ties. Otherwise the top character starts, as in a crawl. Order after that is the same as a crawl: top character, then seat order. Placed monsters now copy `dex` from the file's `stats.d` (`PlacedMonster.dex`; older tokens count as 0).
+- **Opening GM turn**: `Spotlight { kind: 'gm', opening: true }` with `afterSeat` set to the last seat in the order, so the existing hand-on logic goes to the first player. `nextPlayer` doesn't count a round when handing on from it. `setChallenge` rejects it (nobody has acted); monster attacks, posting and passing work. The push says "Combat! The monsters won initiative…".
+- **Start/end only in the GM's turn**, so no pending challenge or damage roll is cut short. `startCrawl` is rejected in combat: "End combat" is the way back, and it asks for the danger level (the pre-fight danger is preselected). The mode is `crawl.combat: true`, and `danger` stays on the crawl.
+- **Light** (`light.ts`): `burnLights` ticks on `roundCompleted` in combat, on `playerActionCompleted` otherwise. A counter that hits 0 in combat gets `outIn = d(players in order)` and emits `lightRanOut` (GM only, not logged). Each `spotlightChanged` to a player turn (not challenge or damage turns) counts it down, and at 0 the normal `torchOut` happens. Events are processed in order, so the round's tick happens before the next player's turn starts. `outIn` 1 means it goes out right as the next player turn starts. A new counter from the GM calls it off. A burnt-down light is never ticked again, and it keeps counting down after the fight ends.
+- **Wandering**: `watchRounds` returns early in combat (the hook from ticket 11). Starting combat drops a waiting check, since the fight's new crawl starts clean anyway.
+- **UI**: the turn card gets a double rule and an uppercase "⚔️ Combat" banner, and the status reads "Combat · Round N", so it never relies on colour. In the GM's turn the log card shows "⚔️ Start combat" (one tap) or an "End combat" panel with the danger picker. The log shows "⚔️ Combat!" / "The fight is over.", plus the monsters' line in the initiative block ("The monsters go first, then X."). The GM's torch counters show "Burnt down: goes out in N player turns".

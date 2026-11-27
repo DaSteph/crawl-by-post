@@ -57,7 +57,7 @@ function body(state: SessionState, spotlight: Spotlight): string {
 		case 'player':
 			return text.push.yourTurn;
 		case 'gm':
-			return text.push.gmTurn(nameOf(state, spotlight.afterSeat));
+			return spotlight.opening ? text.push.gmOpens : text.push.gmTurn(nameOf(state, spotlight.afterSeat));
 		case 'challenge':
 			return text.push.challenge;
 		case 'damage':

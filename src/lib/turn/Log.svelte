@@ -86,16 +86,22 @@
 				<strong>{text.log.initiative}</strong>
 				<ul>
 					{#each e.rolls as r (r.seat)}
-						<li class:winner={r.seat === e.winner}>
+						<li class:winner={!e.gmFirst && r.seat === e.winner}>
 							<span>{nameOf(r.seat)}</span>
 							<span class="num">{text.log.rollLine(r.d20, r.modifier, r.total)}</span>
 						</li>
 					{/each}
+					{#if e.monsters}
+						<li class:winner={e.gmFirst}>
+							<span>{text.log.monstersInitiative}</span>
+							<span class="num">{text.log.rollLine(e.monsters.d20, e.monsters.modifier, e.monsters.total)}</span>
+						</li>
+					{/if}
 				</ul>
 				{#each e.rollOffs as round, i (i)}
 					<p class="meta">{text.log.rollOff(round.map((r) => `${nameOf(r.seat)} ${r.d20}`).join(', '))}</p>
 				{/each}
-				<p class="ok">{text.log.goesFirst(nameOf(e.winner))}</p>
+				<p class="ok">{e.gmFirst ? text.log.monstersFirst(nameOf(e.winner)) : text.log.goesFirst(nameOf(e.winner))}</p>
 			</div>
 		</li>
 	{:else if e.kind === 'challenge'}
@@ -179,6 +185,10 @@
 		<li class="event torch-out">{text.log.torchOut(nameOf(e.seat))}</li>
 	{:else if e.kind === 'declined'}
 		<li class="event">{text.log.declined(nameOf(e.seat))}</li>
+	{:else if e.kind === 'combatStarted'}
+		<li class="event combat"><strong>{text.log.combatStarted}</strong></li>
+	{:else if e.kind === 'combatEnded'}
+		<li class="event combat"><strong>{text.log.combatEnded}</strong></li>
 	{:else if e.kind === 'crawlStarted'}
 		<li class="event">{text.log.crawlStarted(text.crawl.dangers[e.danger])}</li>
 	{:else if e.kind === 'pass'}
@@ -348,6 +358,10 @@
 	}
 	.event.dying {
 		font-weight: 700;
+	}
+	.event.combat {
+		font-style: normal;
+		color: var(--ink);
 	}
 	.event.revealed {
 		font-style: normal;

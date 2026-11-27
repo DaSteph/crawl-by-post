@@ -29,7 +29,8 @@ export type SkipWanderingCheck = { type: 'skipWanderingCheck'; by: string };
  * every `CHECK_EVERY` rounds, and brings a postponed check back.
  */
 export function watchRounds(result: CommandResult): CommandResult {
-	if (!result.ok || !result.state.crawl) return result;
+	// Paused in combat. Ending the fight starts a new crawl, which counts from round 1.
+	if (!result.ok || !result.state.crawl || result.state.crawl.combat) return result;
 	const crawl = result.state.crawl;
 	let check = crawl.wanderingCheck;
 	const events: EngineEvent[] = [];

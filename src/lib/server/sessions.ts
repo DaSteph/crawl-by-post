@@ -135,6 +135,15 @@ export async function startCrawl(sessionId: string, bySecret: string, danger: Da
 	return run(sessionId, { type: 'startCrawl', by: bySecret, danger }, false);
 }
 
+export async function startCombat(sessionId: string, bySecret: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'startCombat', by: bySecret }, false);
+}
+
+/** Ends the fight and starts a new crawl at `danger`. */
+export async function endCombat(sessionId: string, bySecret: string, danger: Danger): Promise<CommandResult> {
+	return run(sessionId, { type: 'endCombat', by: bySecret, danger }, false);
+}
+
 export async function postAction(
 	sessionId: string,
 	bySecret: string,

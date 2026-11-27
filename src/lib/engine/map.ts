@@ -62,8 +62,18 @@ export type MapToken = {
 /**
  * A burning light source in the torch tracker. Everyone sees its flame level;
  * the exact counter is the GM's, and null for players.
+ *
+ * `outIn` (GM only) is set for a light whose counter ran out in combat: the
+ * player turns still to start before it goes out.
  */
-export type MapLight = { id: number; seat: number; kind: 'torch'; level: FlameLevel; counter: number | null };
+export type MapLight = {
+	id: number;
+	seat: number;
+	kind: 'torch';
+	level: FlameLevel;
+	counter: number | null;
+	outIn: number | null;
+};
 
 /**
  * An unknown area behind a doorway, drawn as a dashed "?" on its first square.
@@ -159,7 +169,8 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		seat,
 		kind: light.kind,
 		level: flameLevel(light.counter),
-		counter: gm ? light.counter : null
+		counter: gm ? light.counter : null,
+		outIn: gm ? (light.outIn ?? null) : null
 	}));
 
 	const wandering: MapMonster[] = gm

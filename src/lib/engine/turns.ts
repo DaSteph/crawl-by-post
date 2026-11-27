@@ -8,6 +8,7 @@ import type { WanderingCheck } from './wandering.ts';
 import type { TimeoutEntry } from './timeouts.ts';
 import type { MonsterEntry, MonsterRef } from './monsters.ts';
 import type { LightEntry } from './light.ts';
+import type { CombatEntry, MonsterInitiative } from './combat.ts';
 
 export const DANGER_LEVELS = ['unsafe', 'risky', 'deadly'] as const;
 export type Danger = (typeof DANGER_LEVELS)[number];
@@ -26,10 +27,14 @@ export const POST_LIMITS = {
  * just acted, and `preConsent` is set when they ticked "I'll roll whatever you set".
  * `challenge` and `damage` are short player turns to accept a challenge or roll
  * damage after a hit; they hand the spotlight back to the GM.
+ *
+ * `opening` marks the GM turn that opens a fight the monsters won initiative
+ * for: nobody has acted yet, `afterSeat` is the last seat in the order so the
+ * turn hands on to the first, and no round completes when it does.
  */
 export type Spotlight =
 	| { kind: 'player'; seat: number }
-	| { kind: 'gm'; afterSeat: number; preConsent?: true }
+	| { kind: 'gm'; afterSeat: number; preConsent?: true; opening?: true }
 	| { kind: 'challenge'; seat: number; challenge: Challenge }
 	| { kind: 'damage'; seat: number; weapon: WeaponRef; target?: MonsterRef };
 
@@ -42,6 +47,11 @@ export type Crawl = {
 	spotlight: Spotlight;
 	/** A wandering monster check waiting for the GM. */
 	wanderingCheck?: WanderingCheck;
+	/**
+	 * Combat mode: light ticks once per round and wandering monster checks pause.
+	 * `danger` is the crawl's from before the fight; ending combat asks for a new one.
+	 */
+	combat?: true;
 };
 
 export type InitiativeRoll = { seat: number; d20: number; modifier: number; total: number };
@@ -53,7 +63,12 @@ export type LogEntry = { at: string } & (
 			rolls: InitiativeRoll[];
 			/** Plain d20 roll-offs between characters tied for the top, in order. */
 			rollOffs: { seat: number; d20: number }[][];
+			/** The character going first among the characters. */
 			winner: number;
+			/** In combat, the monsters' single roll. */
+			monsters?: MonsterInitiative;
+			/** In combat, when the monsters beat every character: the GM's turn opens the fight. */
+			gmFirst?: true;
 	  }
 	| { kind: 'round'; round: number }
 	/** A spotlight post by a player. `playedByGm` when the GM played an absent player's turn. */
@@ -76,6 +91,7 @@ export type LogEntry = { at: string } & (
 	| TimeoutEntry
 	| MonsterEntry
 	| LightEntry
+	| CombatEntry
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };
@@ -110,7 +126,7 @@ export function logged(entry: LogEntry): EngineEvent {
 }
 
 /** Rolls d20 + DEX for every character; ties for the top roll off with plain d20s. */
-function rollInitiative(state: SessionState, deps: Deps) {
+export function rollInitiative(state: SessionState, deps: Deps) {
 	const rolls: InitiativeRoll[] = state.players.flatMap((p) => {
 		if (!p.character) return [];
 		const d20 = deps.dice(20);
@@ -126,28 +142,36 @@ function rollInitiative(state: SessionState, deps: Deps) {
 		const top = Math.max(...round.map((r) => r.d20));
 		tied = round.filter((r) => r.d20 === top).map((r) => r.seat);
 	}
-	return { rolls, rollOffs, winner: tied[0] };
+	const winner = tied[0];
+	// The winner first, then seat order.
+	const seats = rolls.map((r) => r.seat).sort((a, b) => a - b);
+	const start = seats.indexOf(winner);
+	const order = [...seats.slice(start), ...seats.slice(0, start)];
+	return { rolls, rollOffs, winner, best, order };
 }
 
 export function startCrawl(state: SessionState, command: StartCrawl, deps: Deps): CommandResult {
 	if (command.by !== state.gmSecret) return { ok: false, reason: 'Only the GM can start a crawl.' };
-	if (!DANGER_LEVELS.includes(command.danger)) return { ok: false, reason: 'Pick a danger level.' };
+	if (state.crawl?.combat) return { ok: false, reason: 'End the combat first. That starts the new crawl.' };
+	return newCrawl(state, command.danger, deps);
+}
+
+/** A fresh crawl: initiative for every character, and the spotlight to the winner. */
+export function newCrawl(state: SessionState, danger: Danger, deps: Deps): CommandResult {
+	if (!DANGER_LEVELS.includes(danger)) return { ok: false, reason: 'Pick a danger level.' };
 	if (!state.players.some((p) => p.character)) {
 		return { ok: false, reason: 'At least one player needs to import a character first.' };
 	}
 
 	const at = deps.now().toISOString();
-	const { rolls, rollOffs, winner } = rollInitiative(state, deps);
-	const seats = rolls.map((r) => r.seat).sort((a, b) => a - b);
-	const start = seats.indexOf(winner);
-	const order = [...seats.slice(start), ...seats.slice(0, start)];
+	const { rolls, rollOffs, winner, order } = rollInitiative(state, deps);
 	const spotlight: Spotlight = { kind: 'player', seat: winner };
 
 	return {
 		ok: true,
-		state: { ...state, crawl: { danger: command.danger, order, round: 1, spotlight } },
+		state: { ...state, crawl: { danger, order, round: 1, spotlight } },
 		events: [
-			logged({ at, kind: 'crawlStarted', danger: command.danger }),
+			logged({ at, kind: 'crawlStarted', danger }),
 			logged({ at, kind: 'initiative', rolls, rollOffs, winner }),
 			{ type: 'spotlightChanged', spotlight }
 		]
@@ -160,7 +184,9 @@ export function nextPlayer(state: SessionState, crawl: Crawl, afterSeat: number,
 	const spotlight: Spotlight = { kind: 'player', seat: crawl.order[index] };
 	const events: EngineEvent[] = [];
 	let round = crawl.round;
-	if (index === 0) {
+	// The GM turn opening a fight comes before the first round, not at the end of one.
+	const opening = crawl.spotlight.kind === 'gm' && crawl.spotlight.opening;
+	if (index === 0 && !opening) {
 		events.push({ type: 'roundCompleted', round });
 		round += 1;
 		events.push(logged({ at, kind: 'round', round }));

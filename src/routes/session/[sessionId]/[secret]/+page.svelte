@@ -33,6 +33,7 @@
 	let importing = $state(false);
 	let savingInventory = $state(false);
 	let startingCrawl = $state(false);
+	let switchingCombat = $state(false);
 	let savingTimeout = $state(false);
 	let moving = $state(false);
 	let moveForm: HTMLFormElement | undefined = $state();
@@ -109,14 +110,19 @@
 	);
 	/** GM: the character a challenge would go to, in the GM's turn. */
 	const challengeSheet = $derived(
-		visitor.role === 'gm' && spotlight?.kind === 'gm' ? (sheetBySeat.get(spotlight.afterSeat) ?? null) : null
+		visitor.role === 'gm' && spotlight?.kind === 'gm' && !spotlight.opening
+			? (sheetBySeat.get(spotlight.afterSeat) ?? null)
+			: null
 	);
+	/** The GM's turn opening a fight the monsters won initiative for. */
+	const opening = $derived(spotlight?.kind === 'gm' && Boolean(spotlight.opening));
 	/** GM: the wandering monster check waiting for a decision. */
 	const wanderingCheck = $derived(visitor.role === 'gm' ? (crawl?.wanderingCheck ?? null) : null);
 	let placingWandering = $state(false);
 	const nameOf = (seat: number) => data.people.find((p) => p.seat === seat)?.name ?? text.session.player(seat);
 	const turnLine = $derived.by(() => {
 		if (holder === null) return null;
+		if (holder === me && me === 'gm' && opening) return text.crawl.yourTurnGmOpens;
 		if (holder === me) return me === 'gm' ? text.crawl.yourTurnGm : text.crawl.yourTurn;
 		if (holder === 'gm') return text.crawl.gmTurn;
 		return me === 'gm' ? text.crawl.waitingFor(nameOf(holder)) : text.crawl.playerTurn(nameOf(holder));
@@ -170,11 +176,16 @@
 
 <Onboarding base="/session/{page.params.sessionId}/{page.params.secret}" />
 
-<section class="turn" class:mine={holder !== null && holder === me} aria-live="polite">
+<section class="turn" class:mine={holder !== null && holder === me} class:combat={crawl?.combat} aria-live="polite">
+	{#if crawl?.combat}
+		<p class="combat-banner"><span aria-hidden="true">⚔️</span> {text.combat.banner}</p>
+	{/if}
 	{#if crawl && turnLine}
 		<strong>{turnLine}</strong>
 		<span class="muted small"
-			>{text.crawl.status(text.crawl.dangers[crawl.danger], crawl.round)}{#if timeLine} · {timeLine}{/if}</span
+			>{crawl.combat
+				? text.crawl.combatStatus(crawl.round)
+				: text.crawl.status(text.crawl.dangers[crawl.danger], crawl.round)}{#if timeLine} · {timeLine}{/if}</span
 		>
 	{:else}
 		<strong>{text.crawl.notStarted}</strong>
@@ -226,10 +237,10 @@
 	{/each}
 {/snippet}
 
-{#snippet crawlForm()}
+{#snippet crawlForm(action = '?/startCrawl', label: string = text.crawl.start, error: string | null = form?.crawlError ?? null)}
 	<form
 		method="POST"
-		action="?/startCrawl"
+		{action}
 		class="stack-sm"
 		use:enhance={() => {
 			startingCrawl = true;
@@ -248,10 +259,10 @@
 				</label>
 			{/each}
 		</fieldset>
-		{#if form?.crawlError}
-			<p class="error" role="alert">{form.crawlError}</p>
+		{#if error}
+			<p class="error" role="alert">{error}</p>
 		{/if}
-		<button class="button" disabled={startingCrawl}>{text.crawl.start}</button>
+		<button class="button" disabled={startingCrawl}>{label}</button>
 	</form>
 {/snippet}
 
@@ -439,6 +450,40 @@
 				/>
 			</details>
 		{/if}
+		{#if visitor.role === 'gm' && crawl && spotlight?.kind === 'gm'}
+			{#if opening}
+				<p class="small" role="status"><span aria-hidden="true">⚔️</span> {text.combat.openingHint}</p>
+			{/if}
+			{#if crawl.combat}
+				<details class="challenge" open={Boolean(form?.combatError)}>
+					<summary><span>{text.combat.endTitle}</span><span class="muted small">{text.combat.endHint}</span></summary>
+					{@render crawlForm('?/endCombat', text.combat.end, form?.combatError ?? null)}
+				</details>
+			{:else}
+				<form
+					method="POST"
+					action="?/startCombat"
+					class="stack-sm"
+					use:enhance={() => {
+						switchingCombat = true;
+						return async ({ update }) => {
+							await update();
+							switchingCombat = false;
+						};
+					}}
+				>
+					<div class="row wrap start">
+						<button class="button secondary" disabled={switchingCombat}
+							><span aria-hidden="true">⚔️</span> {text.combat.start}</button
+						>
+					</div>
+					<p class="muted small">{text.combat.startHint}</p>
+					{#if form?.combatError}
+						<p class="error" role="alert">{form.combatError}</p>
+					{/if}
+				</form>
+			{/if}
+		{/if}
 		<Compose
 			bind:this={compose}
 			sessionId={page.params.sessionId!}
@@ -505,7 +550,7 @@
 	</section>
 {/if}
 
-{#if visitor.role === 'gm' && crawl}
+{#if visitor.role === 'gm' && crawl && !crawl.combat}
 	<section class="card">
 		<details>
 			<summary><span>{text.crawl.restartTitle}</span><span class="muted small">{text.crawl.restartHint}</span></summary>
@@ -906,6 +951,17 @@
 	.turn.mine {
 		background: var(--ink);
 		color: var(--paper);
+	}
+	/* Combat: a double rule and the ⚔️ banner, never colour alone. */
+	.turn.combat {
+		border-style: double;
+		border-width: 6px;
+	}
+	.combat-banner {
+		width: 100%;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 	}
 	.turn.mine .muted {
 		color: inherit;

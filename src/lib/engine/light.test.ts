@@ -217,9 +217,9 @@ describe('the GM and the counters', () => {
 	it('sees exact counters, while players only see the flame level', () => {
 		const state = torchAt(9);
 
-		expect(mapView(state, dungeon, 'gm').lights).toEqual([{ id: 1, seat: 1, kind: 'torch', level: 'flickering', counter: 9 }]);
+		expect(mapView(state, dungeon, 'gm').lights).toEqual([{ id: 1, seat: 1, kind: 'torch', level: 'flickering', counter: 9, outIn: null }]);
 		expect(mapView(state, dungeon, 'player', 2).lights).toEqual([
-			{ id: 1, seat: 1, kind: 'torch', level: 'flickering', counter: null }
+			{ id: 1, seat: 1, kind: 'torch', level: 'flickering', counter: null, outIn: null }
 		]);
 	});
 

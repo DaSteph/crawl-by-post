@@ -1,6 +1,9 @@
 /**
  * Light and torches: every burning light source has a secret counter that
- * ticks down once per completed player action and goes out at zero. A
+ * ticks down once per completed player action and goes out at zero. In
+ * combat it ticks once per round instead, and a counter that runs out there
+ * (on the GM's turn that ends the round) goes out at the start of a random
+ * player turn after that, so darkness falls without warning. A
  * character is lit when a burning light source is in their room or corridor
  * segment; the GM can override any area's light state.
  *
@@ -23,8 +26,12 @@ const BRIGHT_ABOVE = 10;
 /** Counters above this (and up to `BRIGHT_ABOVE`) flicker; the last few gutter. */
 const FLICKERING_ABOVE = 3;
 
-/** A burning light source. It belongs to the room of the character carrying it. */
-export type LightSource = { id: number; kind: 'torch'; counter: number };
+/**
+ * A burning light source. It belongs to the room of the character carrying it.
+ * `outIn` is set once its counter ran out in combat: it burns on (at 0) until
+ * that many player turns have started, then goes out.
+ */
+export type LightSource = { id: number; kind: 'torch'; counter: number; outIn?: number };
 
 /** The GM's ruling on an area's light, overriding whatever is carried there. */
 export type AreaLight = 'lit' | 'dark';
@@ -117,7 +124,8 @@ export function setLightCounter(state: SessionState, command: SetLightCounter, d
 		return { ok: true, state: out.state, events: out.events };
 	}
 	const lights = state.players.find((p) => p.seat === seat)!.lights!;
-	const next = withLights(state, seat, lights.map((l) => (l.id === light.id ? { ...l, counter } : l)));
+	// A new counter also calls off a light that ran out in combat.
+	const next = withLights(state, seat, lights.map((l) => (l.id === light.id ? { id: l.id, kind: l.kind, counter } : l)));
 	const events: EngineEvent[] = [{ type: 'lightCounterSet', id: light.id }];
 	const level = flameLevel(counter);
 	if (level !== flameLevel(light.counter)) events.push({ type: 'torchLevelChanged', seat, id: light.id, level });
@@ -140,42 +148,81 @@ export function setAreaLight(state: SessionState, command: SetAreaLight): Comman
 	};
 }
 
-/** Burns every light source down by one player action. */
-function tick(state: SessionState, at: string): { state: SessionState; events: EngineEvent[] } {
+function withLight(state: SessionState, seat: number, light: LightSource): SessionState {
+	const player: PlayerSlot = state.players.find((p) => p.seat === seat)!;
+	return withLights(state, seat, player.lights!.map((l) => (l.id === light.id ? light : l)));
+}
+
+/**
+ * Burns every light source down by one tick. At zero a light goes out, except
+ * in combat, where it goes out at the start of a random player turn to come.
+ */
+function tick(state: SessionState, deps: Deps, at: string): { state: SessionState; events: EngineEvent[] } {
+	const combat = Boolean(state.crawl?.combat);
 	const events: EngineEvent[] = [];
 	let next = state;
 	for (const { seat, light } of burningLights(state)) {
+		// Already burnt down: it waits for its player turn.
+		if (light.outIn !== undefined) continue;
 		const counter = light.counter - 1;
+		if (counter <= 0 && combat) {
+			const outIn = deps.dice(state.crawl!.order.length);
+			next = withLight(next, seat, { ...light, counter: 0, outIn });
+			events.push({ type: 'lightRanOut', seat, id: light.id, outIn });
+			continue;
+		}
 		if (counter <= 0) {
 			const out = extinguish(next, seat, light.id, at);
 			next = out.state;
 			events.push(...out.events);
 			continue;
 		}
-		const player: PlayerSlot = next.players.find((p) => p.seat === seat)!;
-		next = withLights(next, seat, player.lights!.map((l) => (l.id === light.id ? { ...l, counter } : l)));
+		next = withLight(next, seat, { ...light, counter });
 		const level = flameLevel(counter);
 		if (level !== flameLevel(light.counter)) events.push({ type: 'torchLevelChanged', seat, id: light.id, level });
 	}
 	return { state: next, events };
 }
 
+/** A player turn starts: lights that ran out in combat come one turn closer to going out. */
+function playerTurnStarted(state: SessionState, at: string): { state: SessionState; events: EngineEvent[] } {
+	const events: EngineEvent[] = [];
+	let next = state;
+	for (const { seat, light } of burningLights(state)) {
+		if (light.outIn === undefined) continue;
+		if (light.outIn <= 1) {
+			const out = extinguish(next, seat, light.id, at);
+			next = out.state;
+			events.push(...out.events);
+			continue;
+		}
+		next = withLight(next, seat, { ...light, outIn: light.outIn - 1 });
+	}
+	return { state: next, events };
+}
+
 /**
- * Runs after every successful command: each completed player action (an action
- * post, a skipped turn, a turn the GM played) burns every light source down by
- * one. GM turns, passes and accept or damage turns complete no player action.
+ * Runs after every successful command. In crawl mode each completed player
+ * action (an action post, a skipped turn, a turn the GM played) burns every
+ * light source down by one; GM turns, passes and accept or damage turns
+ * complete no player action. In combat, each completed round burns them down
+ * by one instead. Every player turn that starts brings a light that ran out
+ * in combat closer to going out.
  */
 export function burnLights(result: CommandResult, deps: Deps): CommandResult {
 	if (!result.ok) return result;
-	const actions = result.events.filter((e) => e.type === 'playerActionCompleted').length;
-	if (actions === 0) return result;
+	const tickOn = result.state.crawl?.combat ? 'roundCompleted' : 'playerActionCompleted';
+	const turnStarts = (e: EngineEvent) => e.type === 'spotlightChanged' && e.spotlight.kind === 'player';
+	if (!result.events.some((e) => e.type === tickOn || turnStarts(e))) return result;
 	const at = deps.now().toISOString();
 	let state = result.state;
 	const events = [...result.events];
-	for (let i = 0; i < actions; i++) {
-		const burnt = tick(state, at);
-		state = burnt.state;
-		events.push(...burnt.events);
+	// In order: a round that completes on the GM's turn comes before the next player turn starts.
+	for (const e of result.events) {
+		const step = e.type === tickOn ? tick(state, deps, at) : turnStarts(e) ? playerTurnStarted(state, at) : null;
+		if (!step) continue;
+		state = step.state;
+		events.push(...step.events);
 	}
 	return { ok: true, state, events };
 }

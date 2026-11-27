@@ -25,6 +25,8 @@ import {
 	setLightCounter,
 	setTurnTimeout,
 	startCrawl,
+	startCombat,
+	endCombat,
 	decideWanderingCheck
 } from '#lib/server/sessions.ts';
 import type { Danger } from '#lib/engine/turns.ts';
@@ -89,6 +91,17 @@ export const actions: Actions = {
 		const danger = String((await request.formData()).get('danger') ?? '') as Danger;
 		const result = await startCrawl(params.sessionId, params.secret, danger);
 		if (!result.ok) return fail(400, { crawlError: result.reason });
+	},
+
+	startCombat: async ({ params }) => {
+		const result = await startCombat(params.sessionId, params.secret);
+		if (!result.ok) return fail(400, { combatError: result.reason });
+	},
+
+	endCombat: async ({ params, request }) => {
+		const danger = String((await request.formData()).get('danger') ?? '') as Danger;
+		const result = await endCombat(params.sessionId, params.secret, danger);
+		if (!result.ok) return fail(400, { combatError: result.reason });
 	},
 
 	/** `as` is `action` for a spotlight post and `chat` for anything out of turn. */

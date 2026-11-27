@@ -84,6 +84,7 @@ import {
 	type SetWanderingCheck,
 	type SkipWanderingCheck
 } from './wandering.ts';
+import { endCombat, startCombat, type EndCombat, type StartCombat } from './combat.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -189,7 +190,9 @@ export type Command =
 	| SetAreaLight
 	| SetWanderingCheck
 	| PostponeWanderingCheck
-	| SkipWanderingCheck;
+	| SkipWanderingCheck
+	| StartCombat
+	| EndCombat;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -230,6 +233,8 @@ export type EngineEvent =
 	| { type: 'lightCounterSet'; id: number }
 	| { type: 'torchLevelChanged'; seat: number; id: number; level: FlameLevel }
 	| { type: 'torchExtinguished'; seat: number; id: number }
+	/** In combat, a light's counter ran out: it goes out at the start of the `outIn`th player turn from here. Only the GM is told. */
+	| { type: 'lightRanOut'; seat: number; id: number; outIn: number }
 	| { type: 'areaLightSet'; areaId: string; light: AreaLight | null }
 	/** Round `round` completed and a wandering monster check is due. Only the GM is told. */
 	| { type: 'wanderingCheckDue'; round: number }
@@ -338,6 +343,10 @@ function dispatch(state: SessionState, command: Exclude<Command, { type: 'create
 			return postponeWanderingCheck(state, command);
 		case 'skipWanderingCheck':
 			return skipWanderingCheck(state, command);
+		case 'startCombat':
+			return startCombat(state, command, deps);
+		case 'endCombat':
+			return endCombat(state, command, deps);
 	}
 }
 
