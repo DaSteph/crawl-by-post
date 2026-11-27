@@ -18,6 +18,8 @@ npm run dev
 
 The database schema is created automatically on server start.
 
+For push notifications locally, generate VAPID keys (`npx web-push generate-vapid-keys`) and put them into `.env`. Browsers allow push on `http://localhost`; on a phone you need HTTPS (e.g. the deployed stack or a tunnel). On iPhone and iPad, push only works from the home screen app.
+
 ## Dungeon files
 
 GMs pick a dungeon when they create a session. Dungeons are hand-written YAML or JSON files in the directory `DUNGEONS_DIR` (default `./dungeons`), one file per dungeon; the file name is the dungeon's id. They are read from disk, not stored in the database, so a fix to a file shows up on the next page load. The format is described in `.scratch/crawl-by-post-mvp/dungeon-format.md`, and `dungeons/example.yaml` is a complete example.
@@ -33,6 +35,9 @@ Runtime environment:
 | `DATABASE_URL`      | yes      | Postgres connection string                                                                       |
 | `ORIGIN`            | yes      | Public URL, e.g. `https://crawl.example.org` (needed by SvelteKit's form CSRF check)            |
 | `DUNGEONS_DIR`      | no       | Directory with the dungeon files, default `./dungeons`. The image ships the example there; mount a volume over `/app/dungeons` for your own |
+| `PUBLIC_VAPID_KEY`  | for push | VAPID public key for web push. Generate a pair once with `npx web-push generate-vapid-keys` and keep it: a new pair invalidates every device's subscription. Without it, push is off |
+| `VAPID_PRIVATE_KEY` | for push | The matching VAPID private key                                                                   |
+| `VAPID_SUBJECT`     | no       | Contact for push services, a `mailto:` or `https:` URL. Defaults to `PUBLIC_SOURCE_URL`          |
 | `PUBLIC_SOURCE_URL` | no       | Source code link shown on every page (AGPL-3.0 §13). Defaults to this GitHub repository        |
 | `PORT`              | no       | Listen port, default `3000`                                                                      |
 

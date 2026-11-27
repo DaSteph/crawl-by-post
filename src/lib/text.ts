@@ -209,6 +209,55 @@ export const text = {
 		failed: 'That didn’t go through. Your text is kept here; try again.'
 	},
 
+	push: {
+		yourTurn: 'Your turn. What do you do?',
+		gmTurn: (name: string) => `${name} acted. Respond or pass.`,
+		challenge: 'The GM sets a challenge for you. Roll or back out.',
+		damage: 'Hit! Roll your damage.',
+		testTitle: 'crawl-by-post',
+		testBody: 'Test notification: you’re all set.'
+	},
+
+	onboarding: {
+		title: 'Get notified when it’s your turn',
+		intro: 'Turns can be days apart. Set this up once on each device you play on, and you get a notification whenever the spotlight passes to you.',
+		later: 'Later',
+		done: 'Done',
+		setUp: 'Set up notifications',
+		offLine: 'Notifications are off on this device.',
+		onLine: 'Notifications are on for this device.',
+		step: (n: number, total: number) => `Step ${n} of ${total}`,
+		installTitle: 'Add to your home screen',
+		installIos: [
+			'Tap the Share button in Safari (the square with an arrow pointing up).',
+			'Choose “Add to Home Screen”, then tap “Add”.',
+			'Close Safari and open crawl-by-post from your home screen. This setup continues there.'
+		],
+		iosWhy: 'On iPhone and iPad, notifications only work in the home screen app, not in a Safari tab.',
+		installAndroid: 'Optional, but handy: the app opens straight into this session.',
+		installAndroidSteps: 'Open the browser menu (⋮) and choose “Install app” or “Add to Home screen”.',
+		installButton: 'Install app',
+		skipInstall: 'Skip',
+		permissionTitle: 'Allow notifications',
+		permissionIntro: 'Your browser asks for permission. Choose “Allow”.',
+		permissionButton: 'Allow notifications',
+		permissionWorking: 'Waiting for your answer…',
+		denied:
+			'Notifications are blocked for this site. Allow them in your browser or system settings for this app, then reload.',
+		testTitle: 'Send a test notification',
+		testIntro: 'Check that notifications really reach this device.',
+		testButton: 'Send test notification',
+		testSending: 'Sending…',
+		testWaiting: 'Sent. Waiting for it to arrive…',
+		testReceived: 'It arrived. You’ll be notified when it’s your turn.',
+		testSawIt: 'I saw the notification',
+		testRetry: 'Send again',
+		testFailed: 'The test notification couldn’t be sent. Try again in a moment.',
+		subscribeFailed: 'This device couldn’t be registered for notifications. Try again.',
+		unsupported: 'This browser can’t receive push notifications. Try a current Chrome, Firefox, Edge or Safari.',
+		notConfigured: 'Push notifications aren’t set up on this server yet. Ask whoever runs it.'
+	},
+
 	colours: {
 		blue: 'blue',
 		purple: 'purple',

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { PUBLIC_SOURCE_URL } from '$app/env/public';
 	import { text } from '#lib/text.ts';
 	import type { LayoutProps } from './$types';
@@ -8,7 +9,7 @@
 	let { children }: LayoutProps = $props();
 
 	onMount(() => {
-		// Installability (and later web push) only; the worker caches nothing.
+		// Installability and web push only; the worker caches nothing.
 		if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 	});
 </script>
@@ -16,7 +17,8 @@
 <svelte:head>
 	<link rel="icon" href="/icon.svg" type="image/svg+xml" />
 	<link rel="apple-touch-icon" href="/icon-192.png" />
-	<link rel="manifest" href="/manifest.webmanifest" />
+	<!-- A session page brings its own manifest, so the home screen app opens that link. -->
+	<link rel="manifest" href={page.data.manifest ?? '/manifest.webmanifest'} />
 	<meta name="theme-color" content="#f7f6f1" media="(prefers-color-scheme: light)" />
 	<meta name="theme-color" content="#24272c" media="(prefers-color-scheme: dark)" />
 </svelte:head>

@@ -28,5 +28,16 @@ export async function migrate(): Promise<void> {
 			created_at timestamptz NOT NULL DEFAULT now()
 		);
 		CREATE INDEX IF NOT EXISTS events_session_id ON events (session_id, id);
+		-- One row per device and participant link. A device can hold several links
+		-- (e.g. a GM testing a player link), so the endpoint alone is not the key.
+		CREATE TABLE IF NOT EXISTS push_subscriptions (
+			session_id text NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+			secret     text NOT NULL,
+			endpoint   text NOT NULL,
+			keys       jsonb NOT NULL,
+			created_at timestamptz NOT NULL DEFAULT now(),
+			PRIMARY KEY (session_id, secret, endpoint)
+		);
+		CREATE INDEX IF NOT EXISTS push_subscriptions_endpoint ON push_subscriptions (endpoint);
 	`);
 }

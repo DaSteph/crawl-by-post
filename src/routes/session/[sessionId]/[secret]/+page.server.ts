@@ -30,6 +30,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 	if (!('players' in view)) error(404, text.errors.badLinkTitle);
 
 	return {
+		manifest: `/session/${params.sessionId}/${params.secret}/manifest.webmanifest`,
 		visitor: view.visitor,
 		map: view.map,
 		sheets: view.sheets,

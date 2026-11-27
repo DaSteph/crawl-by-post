@@ -22,6 +22,7 @@ import type { Cell, Dungeon } from '#lib/dungeon/model.ts';
 import type { CheckChoice, Edge } from '#lib/engine/challenges.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
+import { pushAfterCommand } from './push.ts';
 
 const deps: Deps = {
 	dice: (sides) => randomInt(1, sides + 1),
@@ -68,6 +69,7 @@ async function run(sessionId: string, command: Command, isNew: boolean): Promise
 			]);
 		}
 		await client.query('COMMIT');
+		pushAfterCommand(result.state, result.events, 'by' in command ? command.by : null);
 		return result;
 	} catch (e) {
 		await client.query('ROLLBACK');
@@ -219,6 +221,12 @@ async function loadMap(state: SessionState, visitor: Exclude<Visitor, { role: 'u
 	if (!loaded) return { ok: false, errors: ['This session has no dungeon.'] };
 	if (loaded.reason === 'missing') return { ok: false, errors: [`The dungeon file "${state.dungeonId}" is missing.`] };
 	return { ok: false, errors: loaded.errors };
+}
+
+/** True when `secret` is a current GM or player link of the session. */
+export async function isParticipant(sessionId: string, secret: string): Promise<boolean> {
+	const { rows } = await db().query<{ state: SessionState }>('SELECT state FROM sessions WHERE id = $1', [sessionId]);
+	return rows.length > 0 && resolveVisitor(rows[0].state, secret).role !== 'unknown';
 }
 
 /** What the holder of `secret` may see. Player secrets are only shown to the GM. */

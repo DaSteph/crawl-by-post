@@ -14,6 +14,7 @@
 	import CharacterCard from '#lib/character/CharacterCard.svelte';
 	import { MAX_INVENTORY_LENGTH, MAX_PLAYERS } from '#lib/engine/index.ts';
 	import DungeonMap from '#lib/map/DungeonMap.svelte';
+	import Onboarding from '#lib/push/Onboarding.svelte';
 	import { text } from '#lib/text.ts';
 	import type { PageProps } from './$types';
 
@@ -80,13 +81,20 @@
 		return me === 'gm' ? text.crawl.waitingFor(nameOf(holder)) : text.crawl.playerTurn(nameOf(holder));
 	});
 
-	// No live updates: refresh when the app comes back into view.
+	// No live updates: refresh when the app comes back into view, or when a turn push arrives.
 	onMount(() => {
 		const refresh = () => {
 			if (document.visibilityState === 'visible') invalidateAll();
 		};
+		const onPush = (e: MessageEvent) => {
+			if (e.data?.type === 'push') invalidateAll();
+		};
 		document.addEventListener('visibilitychange', refresh);
-		return () => document.removeEventListener('visibilitychange', refresh);
+		navigator.serviceWorker?.addEventListener('message', onPush);
+		return () => {
+			document.removeEventListener('visibilitychange', refresh);
+			navigator.serviceWorker?.removeEventListener('message', onPush);
+		};
 	});
 </script>
 
@@ -106,6 +114,8 @@
 		</p>
 	{/if}
 </header>
+
+<Onboarding base="/session/{page.params.sessionId}/{page.params.secret}" />
 
 <section class="turn" class:mine={holder !== null && holder === me} aria-live="polite">
 	{#if crawl && turnLine}

@@ -11,6 +11,21 @@ export const variables = defineEnvVars({
 		description: 'Directory with the dungeon files (*.yaml, *.yml, *.json) GMs can pick from.',
 		schema: (value) => value || './dungeons'
 	},
+	PUBLIC_VAPID_KEY: {
+		public: true,
+		description:
+			'VAPID public key for web push. Generate a key pair with `npx web-push generate-vapid-keys`. Without it, push is off.',
+		schema: (value) => value
+	},
+	VAPID_PRIVATE_KEY: {
+		description: 'VAPID private key matching PUBLIC_VAPID_KEY.',
+		schema: (value) => value
+	},
+	VAPID_SUBJECT: {
+		description:
+			'Contact for push services, as a mailto: or https: URL. Defaults to PUBLIC_SOURCE_URL.',
+		schema: (value) => value
+	},
 	PUBLIC_SOURCE_URL: {
 		public: true,
 		description:
