@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>crawl-by-post Style Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: page shell with two phone frames side by side (light + dark), each with its own fixed palette; wraps to one column on phones. */
+  :root {
+    --bg: #f3f3f0;
+    --text: #1f2328;
+    --muted: #5b6270;
+    --rule: #d6d8dc;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#16181b; --text:#e9e7e1; --muted:#a3a9b3; --rule:#33373d; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg:#16181b; --text:#e9e7e1; --muted:#a3a9b3; --rule:#33373d; color-scheme: dark; }
+
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--font);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 48px;
+  }
+  .intro { max-width: 760px; margin: 0 auto 28px; display: grid; gap: 8px; }
+  .intro h1 { margin: 0; font-size: 1.5rem; text-wrap: balance; }
+  .intro p { margin: 0; color: var(--muted); line-height: 1.5; max-width: 65ch; }
+  .frames { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; }
+  .col { display: grid; gap: 12px; justify-items: center; width: min(100%, 372px); }
+  .col-label { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* Phone palettes (fixed per frame, independent of the page theme) */
+  .ph-light {
+    --paper:#f7f6f1; --surface:#ffffff; --grid:#dde0e5; --ink:#1f2328; --ink2:#5b6270; --hatch:#a3a9b2;
+    --fire:#e07b0a; --glow:#ffae3d; --mira:#2f6fd6; --tess:#8a4fd1; --brann:#2e8b57; --tok-text:#ffffff;
+    --soft:#ecebe5;
+  }
+  .ph-dark {
+    --paper:#24272c; --surface:#2b2f35; --grid:#353a41; --ink:#e9e7e1; --ink2:#a3a9b3; --hatch:#5f656e;
+    --fire:#ff9a2e; --glow:#ff9a2e; --mira:#7aa7ff; --tess:#bb97f3; --brann:#63c990; --tok-text:#15171a;
+    --soft:#30343a;
+    color-scheme: dark;
+  }
+  .phone {
+    width: 100%; background: var(--paper); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 30px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 14px;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 14px 16px 8px; }
+  .topbar strong { font-size: .95rem; }
+  .topbar span { font-size: .75rem; color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .spot {
+    margin: 0 12px; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .spot b { font-size: 1rem; }
+  .spot small { color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .map { display: block; width: 100%; height: auto; margin-top: 8px; }
+  .lights { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border: 1.5px solid var(--ink); border-radius: 999px; font-size: .78rem;
+  }
+  .chip.dark { border-style: dashed; color: var(--ink2); }
+  .chip svg { width: 14px; height: 14px; }
+  .bars { display: inline-flex; gap: 2px; align-items: flex-end; }
+  .bars i { display: block; width: 3px; border: 1px solid var(--ink); }
+  .bars i:nth-child(1) { height: 5px; } .bars i:nth-child(2) { height: 8px; } .bars i:nth-child(3) { height: 11px; }
+  .bars i.on { background: var(--ink); }
+  .log { padding: 8px 12px 4px; display: grid; gap: 8px; }
+  .log h2 { margin: 0; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); }
+  .entry { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; line-height: 1.4; }
+  .who {
+    width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    font-size: .68rem; font-weight: 700; color: var(--tok-text);
+  }
+  .who.gm { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .entry p { margin: 0; }
+  .entry .meta { font-size: .72rem; color: var(--ink2); }
+  .roll {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding: 6px 10px;
+    border: 1.5px solid var(--ink); border-radius: 8px; background: var(--surface);
+    font-variant-numeric: tabular-nums; font-size: .82rem;
+  }
+  .roll b { font-size: 1rem; }
+  .ok { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .event { font-size: .82rem; color: var(--ink2); font-style: italic; }
+  .collapsed {
+    justify-self: start; font: inherit; font-size: .78rem; color: var(--ink2); background: none;
+    border: 1px dashed var(--ink2); border-radius: 999px; padding: 4px 10px; min-height: 30px;
+  }
+  .compose { margin-top: 8px; padding: 10px 12px 16px; border-top: 2px solid var(--ink); display: grid; gap: 8px; background: var(--surface); }
+  .compose textarea {
+    width: 100%; box-sizing: border-box; resize: none; font: inherit; color: var(--ink); background: var(--paper);
+    border: 1.5px solid var(--ink); border-radius: 8px; padding: 8px 10px; min-height: 60px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .row label { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; min-height: 44px; }
+  .row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--ink); }
+  .count { font-size: .75rem; color: var(--ink2); font-variant-numeric: tabular-nums; }
+  .post {
+    min-height: 44px; padding: 0 20px; border-radius: 10px; border: 2px solid var(--ink);
+    background: var(--ink); color: var(--paper); font: inherit; font-weight: 700;
+  }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid var(--mira); outline-offset: 2px; }
+
+  .legend { width: 100%; border: 2px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); padding: 10px 12px; box-sizing: border-box; }
+  .legend h3 { margin: 0 0 6px; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); }
+  .legend-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .legend figure { margin: 0; display: grid; gap: 4px; justify-items: center; font-size: .72rem; text-align: center; }
+  .legend svg { width: 100%; height: auto; }
+
+  .notes { max-width: 760px; margin: 32px auto 0; display: grid; gap: 8px; color: var(--muted); line-height: 1.5; }
+  .notes h2 { margin: 0; font-size: 1rem; color: var(--text); }
+  .notes ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+
+  .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 2.2s ease-out infinite; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+  .flick { animation: flick 1.8s ease-in-out infinite alternate; }
+  @keyframes flick { 0% { opacity: .85; } 40% { opacity: .62; } 70% { opacity: .78; } 100% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .pulse, .flick { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="intro">
+  <h1>crawl-by-post style mockup</h1>
+  <p>Example screen: it's Mira's turn in a half-explored dungeon, and her torch is flickering. Black-and-white graph paper throughout, with coloured player tokens as the only colour. Light shows only in the torch tracker, and dark rooms are hatched. The same screen is shown in light mode and in dark mode ("chalk on slate").</p>
+</header>
+
+<main class="frames">
+  <div class="col ph-light">
+    <span class="col-label">Light mode</span>
+    <div class="phone" data-frame="l"></div>
+    <div class="legend" data-legend="l"></div>
+  </div>
+  <div class="col ph-dark">
+    <span class="col-label">Dark mode</span>
+    <div class="phone" data-frame="d"></div>
+    <div class="legend" data-legend="d"></div>
+  </div>
+</main>
+
+<section class="notes">
+  <h2>What to look at</h2>
+  <ul>
+    <li><b>Light per room:</b> the chapel is lit by Mira's torch, so it shows plain graph paper. The entry hall and corridor have no light and are hatched over the grid. Brann is standing in the dark there.</li>
+    <li><b>Doorway stop:</b> Mira's token stops at the east door. The room behind it is unknown (dashed "?") until the GM reveals it.</li>
+    <li><b>Tokens:</b> players are coloured discs with initials, and the goblin (G1) is an ink disc. Mira holds the spotlight, so her token has a thick ring and a pulse, and a small flame shows she carries the light.</li>
+    <li><b>Flame levels</b> are shown only in the torch tracker: a text label and three bars.</li>
+    <li><b>Monsters:</b> always black discs. In dark mode they get a stronger light outline so they stand out against the slate paper.</li>
+  </ul>
+</section>
+
+<script>
+(function () {
+  const C = 20; // one grid cell in SVG units
+  const flame = (x, y, s) =>
+    `<path d="M${x} ${y - 7*s} C ${x + 5*s} ${y - 2*s}, ${x + 4*s} ${y + 4*s}, ${x} ${y + 4*s} C ${x - 4*s} ${y + 4*s}, ${x - 5*s} ${y - 1*s}, ${x - 1*s} ${y - 3*s} C ${x - 0.5*s} ${y - 1*s}, ${x + 1*s} ${y - 1*s}, ${x} ${y - 7*s} Z" style="fill:var(--ink);stroke:var(--paper);stroke-width:${0.8*s}"/>`;
+
+  function defs(p) {
+    return `<defs>
+      <pattern id="${p}grid" width="${C}" height="${C}" patternUnits="userSpaceOnUse">
+        <path d="M ${C} 0 L 0 0 0 ${C}" style="fill:none;stroke:var(--grid);stroke-width:1"/>
+      </pattern>
+      <pattern id="${p}hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--hatch);stroke-width:1.4"/>
+      </pattern>
+    </defs>`;
+  }
+
+  function token(cx, cy, fill, label, opts = {}) {
+    const x = cx * C + C / 2, y = cy * C + C / 2, r = C * 0.62;
+    let s = '';
+    if (opts.spot) {
+      s += `<circle class="pulse" cx="${x}" cy="${y}" r="${r + 3}" style="fill:none;stroke:var(--ink);stroke-width:2"/>`;
+    }
+    s += `<circle cx="${x}" cy="${y}" r="${r}" style="fill:${fill};stroke:var(--ink);stroke-width:${opts.spot ? 3.5 : (opts.sw || 1.5)}"/>`;
+    s += `<text x="${x}" y="${y + 4}" text-anchor="middle" style="fill:${opts.textFill || 'var(--tok-text)'};font:700 11px system-ui,sans-serif">${label}</text>`;
+    if (opts.torch) s += flame(x + r - 1, y - r + 2, 0.95);
+    return s;
+  }
+
+  function door(x, y, vertical) {
+    // small rectangle across the wall, standard map notation
+    return vertical
+      ? `<rect x="${x*C - 3}" y="${y*C + 4}" width="6" height="${C - 8}" style="fill:var(--paper);stroke:var(--ink);stroke-width:1.8"/>`
+      : `<rect x="${x*C + 4}" y="${y*C - 3}" width="${C - 8}" height="6" style="fill:var(--paper);stroke:var(--ink);stroke-width:1.8"/>`;
+  }
+
+  function map(p) {
+    const wall = 'stroke:var(--ink);stroke-width:3;stroke-linejoin:round';
+    return `<svg class="map" viewBox="0 ${2*C} ${17*C} ${13*C}" role="img" aria-label="Dungeon map. The chapel is lit by Mira's torch; the entry hall and corridor are dark. Mira stands at the east door of the chapel, next to an unknown room.">
+      ${defs(p)}
+      <rect x="0" y="${2*C}" width="${17*C}" height="${13*C}" style="fill:var(--paper)"/>
+      <rect x="0" y="${2*C}" width="${17*C}" height="${13*C}" fill="url(#${p}grid)"/>
+
+      <!-- Entry hall: explored, dark -->
+      <rect x="${1*C}" y="${9*C}" width="${5*C}" height="${5*C}" fill="url(#${p}hatch)" style="${wall}"/>
+      <!-- Corridor: own segment, dark -->
+      <path d="M ${3*C} ${9*C} V ${6*C} H ${7*C} V ${7*C} H ${4*C} V ${9*C} Z" fill="url(#${p}hatch)" style="${wall}"/>
+      <!-- Chapel: explored, lit by Mira's torch: plain graph paper -->
+      <rect x="${7*C}" y="${3*C}" width="${7*C}" height="${7*C}" style="fill:none;${wall}"/>
+      <!-- Altar -->
+      <rect x="${9*C}" y="${8*C + 4}" width="${3*C}" height="${C - 8}" style="fill:none;stroke:var(--ink);stroke-width:1.5"/>
+
+      ${door(3, 9, false)}
+      ${door(7, 6, true)}
+      ${door(14, 6, true)}
+
+      <!-- Unknown room beyond the east door -->
+      <path d="M ${14*C + 4} ${6.5*C} H ${16*C}" style="stroke:var(--ink2);stroke-width:1.5;stroke-dasharray:3 3"/>
+      <circle cx="${16*C}" cy="${6.5*C}" r="9" style="fill:var(--paper);stroke:var(--ink2);stroke-width:1.5;stroke-dasharray:3 2"/>
+      <text x="${16*C}" y="${6.5*C + 4}" text-anchor="middle" style="fill:var(--ink2);font:700 11px system-ui,sans-serif">?</text>
+
+      <!-- Labels -->
+      <text x="${1*C + 6}" y="${14*C - 6}" style="fill:var(--ink2);font:600 10px system-ui,sans-serif;letter-spacing:.06em">ENTRY HALL</text>
+      <text x="${7*C + 6}" y="${3*C + 14}" style="fill:var(--ink2);font:600 10px system-ui,sans-serif;letter-spacing:.06em">CHAPEL</text>
+      <text x="${10.5*C}" y="${9*C - 1}" text-anchor="middle" style="fill:var(--ink2);font:9px system-ui,sans-serif">altar</text>
+
+      <!-- Tokens -->
+      ${token(3, 11, 'var(--brann)', 'BR')}
+      ${token(9, 6, 'var(--tess)', 'TE')}
+      ${p === 'd'
+        ? token(11, 4, '#0c0d0f', 'G1', { textFill: 'var(--ink)', sw: 2.5 }) + token(12, 8, '#0c0d0f', 'G2', { textFill: 'var(--ink)', sw: 2.5 })
+        : token(11, 4, 'var(--ink)', 'G1', { textFill: 'var(--paper)' }) + token(12, 8, 'var(--ink)', 'G2', { textFill: 'var(--paper)' })}
+      ${token(13, 6, 'var(--mira)', 'MI', { spot: true, torch: true })}
+    </svg>`;
+  }
+
+  function legendCell(p, label, kind) {
+    const w = 60, h = 40;
+    const bars = { bright: 3, flicker: 2, gutter: 1, dark: 0 }[kind];
+    const grid = `<pattern id="${p}${kind}gr" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" style="fill:none;stroke:var(--grid);stroke-width:1"/></pattern>`;
+    const hatch = `<pattern id="${p}${kind}h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--hatch);stroke-width:1.4"/></pattern>`;
+    let body = `<rect x="2" y="2" width="${w-4}" height="${h-4}" style="fill:var(--paper)"/><rect x="2" y="2" width="${w-4}" height="${h-4}" fill="url(#${p}${kind}gr)"/>`;
+    if (kind === 'dark') body += `<rect x="2" y="2" width="${w-4}" height="${h-4}" fill="url(#${p}${kind}h)"/>`;
+    body += `<rect x="2" y="2" width="${w-4}" height="${h-4}" style="fill:none;stroke:var(--ink);stroke-width:2"/>`;
+    if (kind !== 'dark') body += flame(22, 22, 1.1);
+    for (let i = 0; i < 3; i++) {
+      const bh = 5 + i * 4;
+      body += `<rect x="${34 + i*6}" y="${28 - bh}" width="4" height="${bh}" style="fill:${i < bars ? 'var(--ink)' : 'var(--paper)'};stroke:var(--ink);stroke-width:1"/>`;
+    }
+    return `<figure><svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><defs>${grid}${hatch}</defs>${body}</svg><figcaption>${label}</figcaption></figure>`;
+  }
+
+  function phone(p) {
+    return `
+      <div class="topbar"><strong>The Sunken Chapel</strong><span>Crawl · Risky · Round 4</span></div>
+      <div class="spot"><b>Your turn, Mira</b><small>21 h left</small></div>
+      ${map(p)}
+      <div class="lights" aria-label="Light status">
+        <span class="chip"><svg viewBox="-8 -9 16 15" aria-hidden="true">${flame(0, 0, 1)}</svg>Your torch: Flickering
+          <span class="bars" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></span></span>
+        <span class="chip dark">Brann: in darkness</span>
+      </div>
+      <section class="log">
+        <h2>Since your last turn</h2>
+        <div class="entry"><span class="who gm">GM</span><div><p class="event">Brann's torch sputters out in the entry hall.</p></div></div>
+        <div class="entry"><span class="who" style="background:var(--tess)">TE</span><div><p>I run my hands along the altar, looking for anything loose.</p><span class="meta">Tess · pre-consented to a roll</span></div></div>
+        <div class="entry"><span class="who" style="background:var(--tess)">TE</span>
+          <div class="roll"><span>WIS test · DC 12</span><span>d20 <b>14</b> + 1 = <b>15</b></span><span class="ok">Success</span></div></div>
+        <div class="entry"><span class="who gm">GM</span><div><p>Under the altar cloth: a rusted iron key. Behind the east door, something scrapes against stone.</p></div></div>
+        <button class="collapsed" type="button">+5 chat messages</button>
+      </section>
+      <div class="compose">
+        <textarea id="draft-${p}" aria-label="Your turn">I press my ear to the east door and listen.</textarea>
+        <div class="row">
+          <label for="consent-${p}"><input type="checkbox" id="consent-${p}" checked> I'll roll whatever you set</label>
+          <span class="count">43 / 300</span>
+        </div>
+        <div class="row"><span class="count">Tap the map to move</span><button class="post" type="button">Post turn</button></div>
+      </div>`;
+  }
+
+  for (const p of ['l', 'd']) {
+    document.querySelector(`[data-frame="${p}"]`).innerHTML = phone(p);
+    document.querySelector(`[data-legend="${p}"]`).innerHTML =
+      `<h3>Light levels</h3><div class="legend-grid">
+        ${legendCell(p, 'Bright', 'bright')}
+        ${legendCell(p, 'Flickering', 'flicker')}
+        ${legendCell(p, 'Guttering', 'gutter')}
+        ${legendCell(p, 'Darkness', 'dark')}
+      </div>`;
+  }
+})();
+</script>
+</body>
+</html>
