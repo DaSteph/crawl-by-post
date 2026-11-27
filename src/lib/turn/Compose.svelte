@@ -52,6 +52,17 @@
 		save(draft);
 	}
 
+	/** Adds text to the draft (e.g. a mood text on reveal). It stays an editable draft. */
+	export function insert(value: string) {
+		draft = draft.trim() ? `${draft.trimEnd()}\n\n${value}` : value;
+		save(draft);
+		clientError = null;
+		showServerError = false;
+		textarea?.focus();
+	}
+
+	let textarea: HTMLTextAreaElement | undefined = $state();
+
 	const length = $derived(draft.trim().length);
 	const over = $derived(length > limits.over);
 	const placeholder = $derived(
@@ -98,6 +109,7 @@
 		aria-describedby={holder !== null && !myTurn ? 'compose-hint' : undefined}
 		{placeholder}
 		bind:value={draft}
+		bind:this={textarea}
 		{oninput}
 	></textarea>
 	<div class="row">

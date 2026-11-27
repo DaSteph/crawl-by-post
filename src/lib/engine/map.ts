@@ -7,6 +7,7 @@ import { localize, type Dungeon, type ExitType, type LocalizedText, type Rect, t
 import { initials } from '../character/model.ts';
 import type { SessionState, TokenColour } from './index.ts';
 import { spotlightHolder } from './turns.ts';
+import { doorways, movesFor, type Moves } from './movement.ts';
 
 export type MapMonster = { label: string; name: string; count: string };
 
@@ -34,9 +35,24 @@ export type MapToken = {
 	spotlight: boolean;
 };
 
-export type MapView = { dungeonName: string; areas: MapArea[]; exits: MapExit[]; tokens: MapToken[] };
+/**
+ * An unknown area behind a doorway, drawn as a dashed "?" on its first square.
+ * `doorway` is the known square in front of it; `area` is for the GM only.
+ */
+export type MapUnknown = { at: Cell; doorway: Cell; area: string | null };
 
-export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'player'): MapView {
+export type MapView = {
+	dungeonName: string;
+	areas: MapArea[];
+	exits: MapExit[];
+	tokens: MapToken[];
+	unknown: MapUnknown[];
+	/** Where the viewer can move their token now; null unless they hold the spotlight. */
+	moves: Moves | null;
+};
+
+/** `seat` is the viewing player's seat, for their moves. */
+export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'player', seat?: number): MapView {
 	const fallback = dungeon.languages[0];
 	// Sessions don't choose a language yet, so content shows in the default language.
 	const t = (text: LocalizedText | null) => (text ? localize(text, fallback, fallback) : null);
@@ -59,7 +75,7 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		}));
 
 	const exits: MapExit[] = dungeon.exits
-		.filter((e) => gm || ((revealed.has(e.from) || revealed.has(e.to)) && e.type !== 'secret'))
+		.filter((e) => gm || visibleToPlayers(e.from, e.to, e.type, revealed))
 		.map(({ from, to, at, side, type }) => ({ from, to, at, side, type }));
 
 	const visibleAreas = new Set(areas.map((a) => a.id));
@@ -79,5 +95,18 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 			: []
 	);
 
-	return { dungeonName: t(dungeon.name)!, areas, exits, tokens };
+	const unknown: MapUnknown[] = doorways(state, dungeon).map((d) => ({
+		at: d.beyond,
+		doorway: d.doorway.cell,
+		area: gm ? d.area : null
+	}));
+	const moves = !gm && seat !== undefined ? movesFor(state, dungeon, seat) : null;
+
+	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, unknown, moves };
+}
+
+/** Players see exits of revealed areas; a secret one only once both its sides are revealed (found). */
+function visibleToPlayers(from: string, to: string, type: ExitType, revealed: Set<string>): boolean {
+	if (type === 'secret') return revealed.has(from) && revealed.has(to);
+	return revealed.has(from) || revealed.has(to);
 }

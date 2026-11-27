@@ -51,7 +51,21 @@ export const text = {
 		hidden: 'hidden',
 		mood: 'Read-aloud',
 		notes: 'GM notes',
-		monsters: 'Monsters'
+		monsters: 'Monsters',
+		unknown: 'Unknown area behind a doorway',
+		moveTo: (area: string | null, col: number, row: number) =>
+			`Move here: ${area ? `${area}, ` : ''}column ${col}, row ${row}`,
+		moveToDoorway: 'Move to this doorway. The GM reveals what lies beyond.',
+		moveHint: 'Tap a square to move your token, then post what you do. A “?” is unexplored: you stop at its doorway.',
+		moving: 'Moving…',
+		badMove: 'Tap a square on the map to move.',
+		reveal: 'Reveal',
+		hide: 'Hide',
+		revealHint: 'Revealing drafts the read-aloud text into your post box. Edit it, then post.',
+		atDoorway: 'At a doorway',
+		waitingAt: (who: string, area: string) => `${who} waits at the way into ${area}.`,
+		unnamedRoom: 'a room',
+		unnamedPassage: 'a passage'
 	},
 
 	character: {
@@ -124,6 +138,8 @@ export const text = {
 		goesFirst: (name: string) => `${name} goes first.`,
 		round: (n: number) => `Round ${n}`,
 		pass: 'The GM passes.',
+		doorway: (name: string) => `${name} stops at a doorway.`,
+		revealed: (area: string) => `The GM reveals ${area}.`,
 		chat: 'chat',
 		chatRun: (n: number) => `+${n} chat messages`,
 		hideChat: 'Hide chat',

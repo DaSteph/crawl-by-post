@@ -20,6 +20,7 @@ import {
 	type Spotlight,
 	type StartCrawl
 } from './turns.ts';
+import { moveToken, setAreaRevealed, type MoveToken, type SetAreaRevealed } from './movement.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -84,11 +85,16 @@ export type Command =
 	| StartCrawl
 	| PostAction
 	| PostChat
-	| PassSpotlight;
+	| PassSpotlight
+	| MoveToken
+	| SetAreaRevealed;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
 	| { type: 'areaRevealed'; areaId: string }
+	| { type: 'areaHidden'; areaId: string }
+	/** `stoppedAt` is the unknown area whose doorway stopped the move. */
+	| { type: 'tokenMoved'; seat: number; to: Position; stoppedAt: string | null }
 	| { type: 'playerSlotAdded'; seat: number; tokenColour: TokenColour }
 	| { type: 'characterImported'; seat: number; name: string }
 	| { type: 'inventoryEdited'; seat: number }
@@ -149,6 +155,10 @@ export function applyCommand(
 			return postChat(state, command, deps);
 		case 'passSpotlight':
 			return passSpotlight(state, command, deps);
+		case 'moveToken':
+			return moveToken(state, command, deps);
+		case 'setAreaRevealed':
+			return setAreaRevealed(state, command, deps);
 	}
 }
 

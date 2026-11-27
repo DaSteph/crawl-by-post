@@ -2,7 +2,9 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
+	import type { Cell } from '#lib/dungeon/model.ts';
+	import type { MapArea } from '#lib/engine/map.ts';
 	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
 	import Compose from '#lib/turn/Compose.svelte';
 	import Log from '#lib/turn/Log.svelte';
@@ -20,6 +22,41 @@
 	let importing = $state(false);
 	let savingInventory = $state(false);
 	let startingCrawl = $state(false);
+	let moving = $state(false);
+	let moveForm: HTMLFormElement | undefined = $state();
+	let moveTarget = $state<Cell | null>(null);
+	let compose: ReturnType<typeof Compose> | undefined = $state();
+	/** The area whose reveal or hide is on its way. */
+	let revealing = $state<string | null>(null);
+
+	const mapView = $derived(data.map.ok ? data.map.view : null);
+	const ownToken = $derived(
+		visitor.role === 'player' ? (mapView?.tokens.find((t) => t.seat === visitor.seat) ?? null) : null
+	);
+	const focusCell = $derived(ownToken?.cell ?? mapView?.tokens.find((t) => t.spotlight)?.cell ?? null);
+
+	function areaName(id: string) {
+		const area = mapView?.areas.find((a) => a.id === id);
+		return area?.name ?? (area?.kind === 'corridor' ? text.map.unnamedPassage : text.map.unnamedRoom);
+	}
+
+	/** GM: tokens standing at the way into an unknown area, so the reveal is one tap away. */
+	const waiting = $derived(
+		visitor.role !== 'gm' || !mapView
+			? []
+			: mapView.unknown.flatMap((u) => {
+					const seats = mapView.tokens.filter((t) => t.cell.x === u.doorway.x && t.cell.y === u.doorway.y);
+					const area = mapView.areas.find((a) => a.id === u.area);
+					return seats.length && area ? [{ area, who: seats.map((t) => nameOf(t.seat)).join(', ') }] : [];
+				})
+	);
+
+	async function move(cell: Cell) {
+		if (moving || !moveForm) return;
+		moveTarget = cell;
+		await tick();
+		moveForm.requestSubmit();
+	}
 
 	const me = $derived(visitor.role === 'gm' ? 'gm' : visitor.role === 'player' ? visitor.seat : null);
 	const crawl = $derived(data.crawl);
@@ -69,6 +106,30 @@
 	{/if}
 </section>
 
+{#snippet revealForm(area: MapArea)}
+	<form
+		method="POST"
+		action="?/reveal"
+		use:enhance={() => {
+			revealing = area.id;
+			const revealingNow = !area.revealed;
+			const mood = area.mood;
+			return async ({ result, update }) => {
+				await update({ reset: false });
+				revealing = null;
+				// The mood text becomes an editable draft; it is never posted by itself.
+				if (result.type === 'success' && revealingNow && mood) compose?.insert(mood);
+			};
+		}}
+	>
+		<input type="hidden" name="area" value={area.id} />
+		<input type="hidden" name="reveal" value={area.revealed ? '0' : '1'} />
+		<button class="button {area.revealed ? 'secondary' : ''}" disabled={revealing !== null}>
+			{area.revealed ? text.map.hide : text.map.reveal}
+		</button>
+	</form>
+{/snippet}
+
 {#snippet crawlForm()}
 	<form
 		method="POST"
@@ -109,8 +170,50 @@
 <section class="card map-card stack" aria-label={text.map.areas}>
 	{#if data.map.ok}
 		<h2>{data.map.view.dungeonName}</h2>
-		<DungeonMap view={data.map.view} />
+		<DungeonMap
+			view={data.map.view}
+			focus={focusCell}
+			busy={moving}
+			onmove={data.map.view.moves ? move : undefined}
+		/>
+		{#if data.map.view.moves}
+			<p class="small" role="status">{moving ? text.map.moving : text.map.moveHint}</p>
+		{/if}
+		{#if form?.moveError}
+			<p class="error" role="alert">{form.moveError}</p>
+		{/if}
+		<form
+			method="POST"
+			action="?/move"
+			hidden
+			bind:this={moveForm}
+			use:enhance={() => {
+				moving = true;
+				return async ({ update }) => {
+					await update({ reset: false, invalidateAll: true });
+					moving = false;
+				};
+			}}
+		>
+			<input type="hidden" name="x" value={moveTarget?.x ?? ''} />
+			<input type="hidden" name="y" value={moveTarget?.y ?? ''} />
+		</form>
 		{#if visitor.role === 'gm'}
+			{#if waiting.length}
+				<div class="waiting stack-sm" aria-label={text.map.atDoorway}>
+					<strong>{text.map.atDoorway}</strong>
+					{#each waiting as w (w.area.id)}
+						<div class="row wrap">
+							<span>{text.map.waitingAt(w.who, w.area.name ?? text.map.corridor(w.area.id))}</span>
+							{@render revealForm(w.area)}
+						</div>
+					{/each}
+					<p class="muted small">{text.map.revealHint}</p>
+				</div>
+			{/if}
+			{#if form?.revealError}
+				<p class="error" role="alert">{form.revealError}</p>
+			{/if}
 			<p class="muted small">{text.map.gmHint}</p>
 		{/if}
 	{:else if data.map.errors}
@@ -127,8 +230,14 @@
 
 {#if me !== null}
 	<section class="card stack">
-		<Log log={data.log} people={data.people} />
-		<Compose sessionId={page.params.sessionId!} {me} {holder} serverError={form?.postError ?? null} />
+		<Log log={data.log} people={data.people} {areaName} />
+		<Compose
+			bind:this={compose}
+			sessionId={page.params.sessionId!}
+			{me}
+			{holder}
+			serverError={form?.postError ?? null}
+		/>
 	</section>
 {/if}
 
@@ -222,6 +331,10 @@
 							<span>{area.name ?? text.map.corridor(area.id)}</span>
 							<span class="muted small">{area.id} · {area.revealed ? text.map.revealed : text.map.hidden}</span>
 						</summary>
+						<div class="row wrap">
+							{@render revealForm(area)}
+							{#if !area.revealed && area.mood}<span class="muted small">{text.map.revealHint}</span>{/if}
+						</div>
 						<dl>
 							{#if area.mood}
 								<dt>{text.map.mood}</dt>
@@ -375,6 +488,15 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+	}
+	.row.wrap {
+		flex-wrap: wrap;
+		justify-content: space-between;
+	}
+	.waiting {
+		padding: 10px 12px;
+		border: 2px solid var(--ink);
+		border-radius: var(--radius);
 	}
 	textarea {
 		width: 100%;

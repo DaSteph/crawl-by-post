@@ -47,6 +47,9 @@ export type LogEntry = { at: string } & (
 	| { kind: 'pass' }
 	/** Anything posted out of turn. */
 	| { kind: 'chat'; author: number | 'gm'; text: string }
+	/** A token stopped at the doorway of an unknown area. Which area stays secret. */
+	| { kind: 'doorway'; seat: number }
+	| { kind: 'revealed'; areaId: string }
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };

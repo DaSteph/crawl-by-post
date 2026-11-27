@@ -18,6 +18,7 @@ import { importShadowdarklings } from '#lib/character/import.ts';
 import { mapView, type MapView } from '#lib/engine/map.ts';
 import { people, type LogRecord, type Person } from '#lib/engine/log.ts';
 import type { Crawl, Danger, LogEntry } from '#lib/engine/turns.ts';
+import type { Cell, Dungeon } from '#lib/dungeon/model.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
 
@@ -137,6 +138,30 @@ export async function passSpotlight(sessionId: string, bySecret: string): Promis
 	return run(sessionId, { type: 'passSpotlight', by: bySecret }, false);
 }
 
+/** Runs a command that needs the session's dungeon model. */
+async function runWithDungeon(
+	sessionId: string,
+	command: (dungeon: Dungeon) => Command
+): Promise<CommandResult> {
+	const dungeonId = await currentDungeonId(sessionId);
+	const loaded = dungeonId ? await loadDungeon(dungeonId) : null;
+	if (!loaded?.ok) return { ok: false, reason: 'The dungeon is unavailable right now.' };
+	return run(sessionId, command(loaded.dungeon), false);
+}
+
+export async function moveToken(sessionId: string, bySecret: string, to: Cell): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'moveToken', by: bySecret, to, dungeon }));
+}
+
+export async function setAreaRevealed(
+	sessionId: string,
+	bySecret: string,
+	areaId: string,
+	revealed: boolean
+): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setAreaRevealed', by: bySecret, areaId, revealed, dungeon }));
+}
+
 /** How much of the log a page load brings. Older entries stay in the database. */
 const LOG_WINDOW = 300;
 
@@ -163,10 +188,11 @@ export type SessionView =
 	  }
 	| { visitor: { role: 'unknown' } };
 
-async function loadMap(state: SessionState, role: 'gm' | 'player'): Promise<MapLoad> {
+async function loadMap(state: SessionState, visitor: Exclude<Visitor, { role: 'unknown' }>): Promise<MapLoad> {
+	const role = visitor.role;
 	// Sessions created before dungeons existed have no dungeon id.
 	const loaded = state.dungeonId ? await loadDungeon(state.dungeonId) : null;
-	if (loaded?.ok) return { ok: true, view: mapView(state, loaded.dungeon, role) };
+	if (loaded?.ok) return { ok: true, view: mapView(state, loaded.dungeon, role, visitor.role === 'player' ? visitor.seat : undefined) };
 	if (role !== 'gm') return { ok: false, errors: null };
 	if (!loaded) return { ok: false, errors: ['This session has no dungeon.'] };
 	if (loaded.reason === 'missing') return { ok: false, errors: [`The dungeon file "${state.dungeonId}" is missing.`] };
@@ -187,7 +213,7 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 		visitor,
 		players: visitor.role === 'gm' ? state.players : null,
 		sheets: sheets(state, secret),
-		map: await loadMap(state, visitor.role),
+		map: await loadMap(state, visitor),
 		crawl: state.crawl ?? null,
 		people: people(state),
 		log: await loadLog(sessionId)

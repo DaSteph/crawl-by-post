@@ -4,9 +4,11 @@ import {
 	editInventory,
 	importCharacter,
 	loadSessionView,
+	moveToken,
 	passSpotlight,
 	postAction,
 	postChat,
+	setAreaRevealed,
 	startCrawl
 } from '#lib/server/sessions.ts';
 import type { Danger } from '#lib/engine/turns.ts';
@@ -82,5 +84,22 @@ export const actions: Actions = {
 	pass: async ({ params }) => {
 		const result = await passSpotlight(params.sessionId, params.secret);
 		if (!result.ok) return fail(400, { postError: result.reason });
+	},
+
+	move: async ({ params, request }) => {
+		const form = await request.formData();
+		const x = Number(form.get('x'));
+		const y = Number(form.get('y'));
+		if (!Number.isInteger(x) || !Number.isInteger(y)) return fail(400, { moveError: text.map.badMove });
+		const result = await moveToken(params.sessionId, params.secret, { x, y });
+		if (!result.ok) return fail(400, { moveError: result.reason });
+	},
+
+	/** `reveal` is `1` to reveal the area and `0` to hide it. */
+	reveal: async ({ params, request }) => {
+		const form = await request.formData();
+		const areaId = String(form.get('area') ?? '');
+		const result = await setAreaRevealed(params.sessionId, params.secret, areaId, form.get('reveal') === '1');
+		if (!result.ok) return fail(400, { revealError: result.reason });
 	}
 };

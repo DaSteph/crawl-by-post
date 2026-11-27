@@ -2,7 +2,16 @@
 	import { groupLog, LONG_POST, type LogRecord, type Person } from '#lib/engine/log.ts';
 	import { text } from '#lib/text.ts';
 
-	let { log, people }: { log: LogRecord[]; people: Person[] } = $props();
+	let {
+		log,
+		people,
+		areaName
+	}: {
+		log: LogRecord[];
+		people: Person[];
+		/** The name of an area as the viewer may know it. */
+		areaName: (id: string) => string;
+	} = $props();
 
 	/** Blocks shown before "show earlier" is needed; the newest are at the bottom. */
 	const WINDOW = 60;
@@ -89,6 +98,10 @@
 		<li class="event">{text.log.crawlStarted(text.crawl.dangers[e.danger])}</li>
 	{:else if e.kind === 'pass'}
 		<li class="event">{text.log.pass}</li>
+	{:else if e.kind === 'doorway'}
+		<li class="event">{text.log.doorway(nameOf(e.seat))}</li>
+	{:else if e.kind === 'revealed'}
+		<li class="event revealed">{text.log.revealed(areaName(e.areaId))}</li>
 	{:else if e.kind === 'round'}
 		<li class="divider"><span>{text.log.round(e.round)}</span></li>
 	{/if}
@@ -210,6 +223,11 @@
 	.winner,
 	.ok {
 		font-weight: 700;
+	}
+	.event.revealed {
+		font-style: normal;
+		font-weight: 600;
+		color: var(--ink);
 	}
 	.event {
 		font-size: 0.85rem;
