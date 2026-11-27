@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { parseDungeon } from '../dungeon/parse.ts';
 import { applyCommand, resolveVisitor, type Command, type Deps, type SessionState } from './index.ts';
+import { mapView } from './map.ts';
+
+const parsed = parseDungeon(readFileSync('dungeons/example.yaml', 'utf8'), 'example');
+if (!parsed.ok) throw new Error('the example dungeon must parse');
+const dungeon = parsed.dungeon;
 
 const deps: Deps = {
 	dice: () => {
@@ -11,7 +18,7 @@ const deps: Deps = {
 function createSession() {
 	const result = applyCommand(
 		null,
-		{ type: 'createSession', sessionId: 's1', name: 'The Lost Citadel', gmSecret: 'gm-secret' },
+		{ type: 'createSession', sessionId: 's1', name: 'The Lost Citadel', gmSecret: 'gm-secret', dungeon },
 		deps
 	);
 	if (!result.ok) throw new Error(result.reason);
@@ -34,12 +41,12 @@ describe('creating a session', () => {
 	it('trims the name and rejects a blank one', () => {
 		const blank = applyCommand(
 			null,
-			{ type: 'createSession', sessionId: 's1', name: '   ', gmSecret: 'gm-secret' },
+			{ type: 'createSession', sessionId: 's1', name: '   ', gmSecret: 'gm-secret', dungeon },
 			deps
 		);
 		const padded = applyCommand(
 			null,
-			{ type: 'createSession', sessionId: 's1', name: '  Tomb  ', gmSecret: 'gm-secret' },
+			{ type: 'createSession', sessionId: 's1', name: '  Tomb  ', gmSecret: 'gm-secret', dungeon },
 			deps
 		);
 
@@ -94,5 +101,53 @@ describe('player slots', () => {
 		const fifth = applyCommand(state, { type: 'addPlayerSlot', by: 'gm-secret', secret: 'p5' }, deps);
 		expect(fifth).toEqual({ ok: false, reason: 'A session has at most 4 players.' });
 		expect(resolveVisitor(state, 'p5')).toEqual({ role: 'unknown' });
+	});
+});
+
+describe('the dungeon map', () => {
+	it('reveals the start room when the session is created', () => {
+		const result = applyCommand(
+			null,
+			{ type: 'createSession', sessionId: 's1', name: 'Chapel', gmSecret: 'gm-secret', dungeon },
+			deps
+		);
+
+		expect(result.ok && result.events).toEqual([
+			{ type: 'sessionCreated', sessionId: 's1', dungeonId: 'example' },
+			{ type: 'areaRevealed', areaId: 'r1' }
+		]);
+		expect(mapView(createSession(), dungeon, 'player').areas.map((a) => a.id)).toEqual(['r1']);
+	});
+
+	it('shows players the doors of revealed areas, but no secret doors and nothing GM-only', () => {
+		const view = mapView(createSession(), dungeon, 'player');
+
+		expect(view.areas).toEqual([
+			{
+				id: 'r1',
+				kind: 'room',
+				rect: { x: 0, y: 0, w: 5, h: 4 },
+				name: 'Entrance hall',
+				revealed: true,
+				mood: null,
+				notes: null,
+				monsters: []
+			}
+		]);
+		expect(view.exits.map((e) => `${e.from}-${e.type}-${e.to}`)).toEqual(['r1-open-c1', 'r1-door-c2']);
+	});
+
+	it('shows the GM every area with its notes, mood text and monsters, and every exit', () => {
+		const view = mapView(createSession(), dungeon, 'gm');
+		const guardRoom = view.areas.find((a) => a.id === 'r2')!;
+
+		expect(view.areas).toHaveLength(7);
+		expect(guardRoom).toMatchObject({
+			revealed: false,
+			notes: 'The goblins are bored and bribable (10 gp or food).',
+			monsters: [{ label: 'G', name: 'Goblin', count: '2' }]
+		});
+		expect(guardRoom.mood).toMatch(/^A brazier smoulders/);
+		expect(view.exits.some((e) => e.type === 'secret')).toBe(true);
 	});
 });

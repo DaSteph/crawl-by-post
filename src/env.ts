@@ -7,6 +7,10 @@ export const variables = defineEnvVars({
 		// the server fails at start-up if it is missing.
 		schema: (value) => value
 	},
+	DUNGEONS_DIR: {
+		description: 'Directory with the dungeon files (*.yaml, *.yml, *.json) GMs can pick from.',
+		schema: (value) => value || './dungeons'
+	},
 	PUBLIC_SOURCE_URL: {
 		public: true,
 		description:

@@ -13,6 +13,8 @@ ENV NODE_ENV=production \
 COPY --from=build /app/build ./build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
+# The example dungeon; mount a volume over /app/dungeons for your own files.
+COPY --from=build /app/dungeons ./dungeons
 USER node
 EXPOSE 3000
 CMD ["node", "build"]

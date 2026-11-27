@@ -12,7 +12,9 @@ import {
 	type SessionState,
 	type Visitor
 } from '#lib/engine/index.ts';
+import { mapView, type MapView } from '#lib/engine/map.ts';
 import { db } from './db.ts';
+import { loadDungeon } from './dungeons.ts';
 
 const deps: Deps = {
 	dice: (sides) => randomInt(1, sides + 1),
@@ -69,11 +71,18 @@ async function run(sessionId: string, command: Command, isNew: boolean): Promise
 }
 
 export async function createSession(
-	name: string
+	name: string,
+	dungeonId: string
 ): Promise<{ ok: true; sessionId: string; gmSecret: string } | { ok: false; reason: string }> {
+	const loaded = await loadDungeon(dungeonId);
+	if (!loaded.ok) return { ok: false, reason: 'Pick a dungeon from the list.' };
 	const sessionId = newToken(12);
 	const gmSecret = newToken(24);
-	const result = await run(sessionId, { type: 'createSession', sessionId, name, gmSecret }, true);
+	const result = await run(
+		sessionId,
+		{ type: 'createSession', sessionId, name, gmSecret, dungeon: loaded.dungeon },
+		true
+	);
 	return result.ok ? { ok: true, sessionId, gmSecret } : result;
 }
 
@@ -81,9 +90,26 @@ export async function addPlayerSlot(sessionId: string, bySecret: string): Promis
 	return run(sessionId, { type: 'addPlayerSlot', by: bySecret, secret: newToken(24) }, false);
 }
 
+/** The map, or why it can't be shown. File errors are for the GM only. */
+export type MapLoad = { ok: true; view: MapView } | { ok: false; errors: string[] | null };
+
 export type SessionView =
-	| { visitor: Exclude<Visitor, { role: 'unknown' }>; players: SessionState['players'] | null }
+	| {
+			visitor: Exclude<Visitor, { role: 'unknown' }>;
+			players: SessionState['players'] | null;
+			map: MapLoad;
+	  }
 	| { visitor: { role: 'unknown' } };
+
+async function loadMap(state: SessionState, role: 'gm' | 'player'): Promise<MapLoad> {
+	// Sessions created before dungeons existed have no dungeon id.
+	const loaded = state.dungeonId ? await loadDungeon(state.dungeonId) : null;
+	if (loaded?.ok) return { ok: true, view: mapView(state, loaded.dungeon, role) };
+	if (role !== 'gm') return { ok: false, errors: null };
+	if (!loaded) return { ok: false, errors: ['This session has no dungeon.'] };
+	if (loaded.reason === 'missing') return { ok: false, errors: [`The dungeon file "${state.dungeonId}" is missing.`] };
+	return { ok: false, errors: loaded.errors };
+}
 
 /** What the holder of `secret` may see. Player secrets are only shown to the GM. */
 export async function loadSessionView(sessionId: string, secret: string): Promise<SessionView> {
@@ -95,5 +121,9 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 	const state = rows[0].state;
 	const visitor = resolveVisitor(state, secret);
 	if (visitor.role === 'unknown') return { visitor };
-	return { visitor, players: visitor.role === 'gm' ? state.players : null };
+	return {
+		visitor,
+		players: visitor.role === 'gm' ? state.players : null,
+		map: await loadMap(state, visitor.role)
+	};
 }

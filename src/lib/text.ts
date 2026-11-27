@@ -9,6 +9,11 @@ export const text = {
 		title: 'Start a new session',
 		nameLabel: 'Session name',
 		namePlaceholder: 'e.g. The Lost Citadel',
+		dungeonLabel: 'Dungeon',
+		dungeonPlaceholder: 'Pick a dungeon',
+		noDungeons:
+			'No dungeon files found. Put .yaml or .json files into the dungeon directory on the server (DUNGEONS_DIR).',
+		invalidDungeons: 'These dungeon files have errors and can’t be picked:',
 		submit: 'Create session',
 		noAccount: 'No account needed. You get a secret GM link instead.'
 	},
@@ -31,8 +36,22 @@ export const text = {
 		addPlayer: 'Add player',
 		tableFull: 'The table is full (4 players).',
 		player: (seat: number) => `Player ${seat}`,
-		linkHint: 'Send each player their own link. Anyone with a link can play that seat.',
-		placeholder: 'The dungeon is not open yet. Come back soon.'
+		linkHint: 'Send each player their own link. Anyone with a link can play that seat.'
+	},
+
+	map: {
+		label: (dungeon: string, explored: number) =>
+			`Map of ${dungeon}. ${explored} ${explored === 1 ? 'area' : 'areas'} explored.`,
+		unavailable: 'The dungeon is unavailable right now. Ask your GM.',
+		gmErrors: 'The dungeon file can’t be loaded:',
+		gmHint: 'Dashed walls are not revealed yet. Only you see them, and the S marks secret doors.',
+		areas: 'Rooms and corridors',
+		corridor: (id: string) => `Corridor ${id}`,
+		revealed: 'revealed',
+		hidden: 'hidden',
+		mood: 'Read-aloud',
+		notes: 'GM notes',
+		monsters: 'Monsters'
 	},
 
 	colours: {

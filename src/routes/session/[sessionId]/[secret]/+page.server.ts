@@ -11,6 +11,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 
 	return {
 		visitor: view.visitor,
+		map: view.map,
 		players:
 			view.players?.map((p) => ({
 				seat: p.seat,

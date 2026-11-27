@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import CopyLink from '#lib/CopyLink.svelte';
 	import { MAX_PLAYERS } from '#lib/engine/index.ts';
+	import DungeonMap from '#lib/map/DungeonMap.svelte';
 	import { text } from '#lib/text.ts';
 	import type { PageProps } from './$types';
 
@@ -25,6 +26,59 @@
 		</p>
 	{/if}
 </header>
+
+<section class="card map-card stack" aria-label={text.map.areas}>
+	{#if data.map.ok}
+		<h2>{data.map.view.dungeonName}</h2>
+		<DungeonMap view={data.map.view} />
+		{#if visitor.role === 'gm'}
+			<p class="muted small">{text.map.gmHint}</p>
+		{/if}
+	{:else if data.map.errors}
+		<p class="error">{text.map.gmErrors}</p>
+		<ul class="file-errors">
+			{#each data.map.errors as error, i (i)}
+				<li>{error}</li>
+			{/each}
+		</ul>
+	{:else}
+		<p class="muted">{text.map.unavailable}</p>
+	{/if}
+</section>
+
+{#if visitor.role === 'gm' && data.map.ok}
+	<section class="card stack">
+		<h2>{text.map.areas}</h2>
+		<ul class="stack-sm">
+			{#each data.map.view.areas as area (area.id)}
+				<li>
+					<details>
+						<summary>
+							<span>{area.name ?? text.map.corridor(area.id)}</span>
+							<span class="muted small">{area.id} · {area.revealed ? text.map.revealed : text.map.hidden}</span>
+						</summary>
+						<dl>
+							{#if area.mood}
+								<dt>{text.map.mood}</dt>
+								<dd class="mood">{area.mood}</dd>
+							{/if}
+							{#if area.notes}
+								<dt>{text.map.notes}</dt>
+								<dd>{area.notes}</dd>
+							{/if}
+							{#if area.monsters.length}
+								<dt>{text.map.monsters}</dt>
+								<dd>
+									{area.monsters.map((m) => `${m.count} × ${m.name} (${m.label})`).join(', ')}
+								</dd>
+							{/if}
+						</dl>
+					</details>
+				</li>
+			{/each}
+		</ul>
+	</section>
+{/if}
 
 {#if data.players}
 	<section class="card stack">
@@ -57,8 +111,6 @@
 		{/if}
 	</section>
 {/if}
-
-<p class="muted placeholder">{text.session.placeholder}</p>
 
 <style>
 	.stack {
@@ -101,8 +153,50 @@
 	.error {
 		font-weight: 700;
 	}
-	.placeholder {
-		margin-top: 24px;
-		text-align: center;
+	section + section {
+		margin-top: 16px;
+	}
+	.map-card {
+		padding: 12px;
+	}
+	.small {
+		font-size: 0.85rem;
+	}
+	.file-errors {
+		padding-left: 18px;
+		list-style: disc;
+		font-family: ui-monospace, monospace;
+		font-size: 0.85rem;
+		overflow-wrap: anywhere;
+	}
+	summary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 4px 12px;
+		min-height: var(--tap);
+		padding-block: 10px;
+		cursor: pointer;
+		font-weight: 600;
+	}
+	dl {
+		margin: 0 0 12px;
+	}
+	dt {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--ink-2);
+		margin-top: 8px;
+	}
+	dd {
+		margin: 2px 0 0;
+	}
+	.mood {
+		border-left: 3px solid var(--ink);
+		padding-left: 10px;
+		font-style: italic;
 	}
 </style>

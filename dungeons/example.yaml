@@ -1,0 +1,162 @@
+# Example dungeon. Format: .scratch/crawl-by-post-mvp/dungeon-format.md (invented content, no text from the book).
+# Layout on the grid (x right, y down):
+#
+#   r1 Entrance hall  x0-4  y0-3   (start)
+#   c1                x5-9  y1     r1 --open--> c1 --door--> r2
+#   r2 Guard room     x10-13 y0-3
+#   c2                x2    y4-7   r1 --door--> c2
+#   c3                x3-6  y7     touches the end of c2 (open connection)
+#   r3 Crypt          x7-10 y5-9   c3 --locked--> r3
+#   r4 Hidden shrine  x11-13 y6-8  r3 --secret--> r4
+
+name:
+  en: The Drowned Chapel
+  de: Die versunkene Kapelle
+languages: [en, de]
+start: r1
+danger: risky
+
+rooms:
+  - id: r1
+    name:
+      en: Entrance hall
+      de: Eingangshalle
+    rect: { x: 0, y: 0, w: 5, h: 4 }
+    mood:
+      en: >
+        Cold air rolls up the broken stairs. Water drips from the vaulted
+        ceiling, and the floor is slick with green moss. An archway gapes
+        to the east; a wooden door stands in the south wall.
+      de: >
+        Kalte Luft steigt die zerbrochene Treppe herauf. Wasser tropft von
+        der gewölbten Decke, der Boden ist glitschig vor grünem Moos. Im
+        Osten klafft ein Torbogen, in der Südwand steht eine Holztür.
+    notes: The moss hides a loose flagstone (DC 12 to notice), 3 gp beneath.
+    exits:
+      - { at: [4, 1], side: e, to: c1, type: open }
+      - { at: [2, 3], side: s, to: c2, type: door }
+
+  - id: r2
+    name:
+      en: Guard room
+      de: Wachstube
+    rect: { x: 10, y: 0, w: 4, h: 4 }
+    mood:
+      en: >
+        A brazier smoulders in the corner. Two cots, a dice cup on an
+        upturned barrel, and the smell of wet dog.
+      de: >
+        In der Ecke glimmt ein Kohlebecken. Zwei Pritschen, ein Würfelbecher
+        auf einem umgedrehten Fass und der Geruch von nassem Hund.
+    notes: The goblins are bored and bribable (10 gp or food).
+    exits:
+      - { at: [10, 1], side: w, to: c1, type: door }
+    monsters:
+      - name:
+          en: Goblin
+          de: Goblin
+        label: G
+        count: 2
+        level: 1
+        ac: 11
+        hp: 1d6
+        attacks:
+          - { name: spear, range: near, bonus: 1, damage: 1d6 }
+        mv: near
+        stats: { s: 0, d: 1, c: 0, i: 0, w: -1, ch: -1 }
+        al: C
+
+  - id: r3
+    name:
+      en: Crypt
+      de: Krypta
+    rect: { x: 7, y: 5, w: 4, h: 5 }
+    mood:
+      en: >
+        Stone niches line the walls, each holding a shrouded shape. Something
+        scrapes in the dark, bone on stone.
+      de: >
+        Steinnischen säumen die Wände, in jeder eine verhüllte Gestalt. Etwas
+        schabt im Dunkeln, Knochen auf Stein.
+    notes: >
+      The east wall has a secret door (DC 15 search).
+    exits:
+      - { at: [10, 7], side: e, to: r4, type: secret }
+    monsters:
+      - name:
+          en: Skeleton
+          de: Skelett
+        label: S
+        count: 1d4
+        level: 2
+        ac: 13
+        attacks:
+          - { name: rusty sword, bonus: 1, damage: 1d6 }
+        mv: near
+        al: C
+        abilities:
+          - name:
+              en: Brittle
+              de: Spröde
+            text:
+              en: Takes half damage from piercing weapons.
+              de: Erleidet nur halben Schaden durch Stichwaffen.
+        notes: Rises only when someone touches a shroud.   # HP left out → 2d8 + CON
+
+  - id: r4
+    name:
+      en: Hidden shrine
+      de: Verborgener Schrein
+    rect: { x: 11, y: 6, w: 3, h: 3 }
+    mood:
+      en: >
+        Dry air, for the first time. A small altar holds a silver chalice
+        that catches what little light you carry.
+      de: >
+        Zum ersten Mal trockene Luft. Auf einem kleinen Altar steht ein
+        silberner Kelch, der das wenige Licht einfängt, das ihr tragt.
+    notes: Silver chalice, 80 gp. Drinking holy water from it heals 1d4 once per day.
+
+corridors:
+  - id: c1
+    from: [5, 1]
+    to: [9, 1]
+    mood:
+      en: A low passage. Your footsteps echo ahead of you.
+      de: Ein niedriger Gang. Eure Schritte hallen vor euch her.
+
+  - id: c2
+    from: [2, 4]
+    to: [2, 7]
+
+  - id: c3
+    from: [3, 7]
+    to: [6, 7]
+    mood:
+      en: The passage dips into ankle-deep black water.
+      de: Der Gang fällt ab in knöcheltiefes schwarzes Wasser.
+    exits:
+      - { at: [6, 7], side: e, to: r3, type: locked }
+
+wandering:
+  - name:
+      en: Giant rat
+      de: Riesenratte
+    label: R
+    count: 1d4
+    level: 1
+    ac: 11
+    hp: 3
+    attacks:
+      - { name: bite, bonus: 1, damage: 1d4, effect: disease }
+    mv: near
+
+  - name:
+      en: Grave robber
+      de: Grabräuber
+    label: B
+    count: 1d4
+    statblock: >
+      AC 12 (leather), HP 5, ATK 1 shovel +1 (1d4) or 1 sling (far)
+      +1 (1d4), MV near, S +1, D +1, C +0, I +0, W -1, Ch -1, AL C, LV 1
+    notes: Here for the chalice in r4. Will flee or bargain if outnumbered.

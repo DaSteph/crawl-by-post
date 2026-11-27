@@ -13,10 +13,14 @@ npm install
 npm run dev
 ```
 
-- `npm test` runs the game engine tests (Vitest).
+- `npm test` runs the tests (Vitest): game engine, dungeon file parser, map geometry.
 - `npm run check` type-checks the project.
 
 The database schema is created automatically on server start.
+
+## Dungeon files
+
+GMs pick a dungeon when they create a session. Dungeons are hand-written YAML or JSON files in the directory `DUNGEONS_DIR` (default `./dungeons`), one file per dungeon; the file name is the dungeon's id. They are read from disk, not stored in the database, so a fix to a file shows up on the next page load. The format is described in `.scratch/crawl-by-post-mvp/dungeon-format.md`, and `dungeons/example.yaml` is a complete example.
 
 ## Container image
 
@@ -28,6 +32,7 @@ Runtime environment:
 | ------------------- | -------- | ----------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`      | yes      | Postgres connection string                                                                       |
 | `ORIGIN`            | yes      | Public URL, e.g. `https://crawl.example.org` (needed by SvelteKit's form CSRF check)            |
+| `DUNGEONS_DIR`      | no       | Directory with the dungeon files, default `./dungeons`. The image ships the example there; mount a volume over `/app/dungeons` for your own |
 | `PUBLIC_SOURCE_URL` | no       | Source code link shown on every page (AGPL-3.0 §13). Defaults to this GitHub repository        |
 | `PORT`              | no       | Listen port, default `3000`                                                                      |
 

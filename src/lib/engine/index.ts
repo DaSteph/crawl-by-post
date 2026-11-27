@@ -2,8 +2,10 @@
  * The game engine: the single place where game rules live.
  *
  * Pure and deterministic. Dice and clock are injected, and secrets are generated
- * by the caller and passed in with the command.
+ * by the caller and passed in with the command. The dungeon model is parsed from
+ * its file by the caller too; the state only keeps the dungeon's id.
  */
+import type { Dungeon } from '../dungeon/model.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -29,15 +31,20 @@ export type SessionState = {
 	createdAt: string;
 	gmSecret: string;
 	players: PlayerSlot[];
+	/** File name of the dungeon without its extension. */
+	dungeonId: string;
+	/** Ids of the rooms and corridor segments everyone can see. */
+	revealed: string[];
 };
 
 export type Command =
-	| { type: 'createSession'; sessionId: string; name: string; gmSecret: string }
+	| { type: 'createSession'; sessionId: string; name: string; gmSecret: string; dungeon: Dungeon }
 	/** `by` is the secret of the participant issuing the command. */
 	| { type: 'addPlayerSlot'; by: string; secret: string };
 
 export type EngineEvent =
-	| { type: 'sessionCreated'; sessionId: string }
+	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
+	| { type: 'areaRevealed'; areaId: string }
 	| { type: 'playerSlotAdded'; seat: number; tokenColour: TokenColour };
 
 export type CommandResult =
@@ -62,9 +69,18 @@ export function applyCommand(
 			name,
 			createdAt: deps.now().toISOString(),
 			gmSecret: command.gmSecret,
-			players: []
+			players: [],
+			dungeonId: command.dungeon.id,
+			revealed: [command.dungeon.start]
 		};
-		return { ok: true, state: next, events: [{ type: 'sessionCreated', sessionId: next.id }] };
+		return {
+			ok: true,
+			state: next,
+			events: [
+				{ type: 'sessionCreated', sessionId: next.id, dungeonId: next.dungeonId },
+				{ type: 'areaRevealed', areaId: command.dungeon.start }
+			]
+		};
 	}
 
 	if (!state) return { ok: false, reason: 'No such session.' };

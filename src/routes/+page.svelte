@@ -4,7 +4,9 @@
 	import { text } from '#lib/text.ts';
 	import type { PageProps } from './$types';
 
-	let { form }: PageProps = $props();
+	let { data, form }: PageProps = $props();
+	const valid = $derived(data.dungeons.filter((d) => d.ok));
+	const invalid = $derived(data.dungeons.filter((d) => !d.ok));
 </script>
 
 <svelte:head>
@@ -38,10 +40,40 @@
 				value={form && 'name' in form ? form.name : ''}
 			/>
 		</label>
+		<label class="stack-sm">
+			<span>{text.start.dungeonLabel}</span>
+			{#if valid.length}
+				<select name="dungeon" required>
+					{#if valid.length > 1}
+						<option value="" disabled selected={!(form && 'dungeon' in form)}>{text.start.dungeonPlaceholder}</option>
+					{/if}
+					{#each valid as dungeon (dungeon.id)}
+						<option value={dungeon.id} selected={form && 'dungeon' in form && form.dungeon === dungeon.id}>
+							{dungeon.ok ? dungeon.name : dungeon.id}
+						</option>
+					{/each}
+				</select>
+			{:else}
+				<span class="muted">{text.start.noDungeons}</span>
+			{/if}
+		</label>
+		{#if invalid.length}
+			<details class="small">
+				<summary>{text.start.invalidDungeons} {invalid.map((d) => d.id).join(', ')}</summary>
+				{#each invalid as dungeon (dungeon.id)}
+					<p><strong>{dungeon.id}</strong></p>
+					<ul class="errors">
+						{#each dungeon.ok ? [] : dungeon.errors as error, i (i)}
+							<li>{error}</li>
+						{/each}
+					</ul>
+				{/each}
+			</details>
+		{/if}
 		{#if form && 'error' in form}
 			<p class="error" role="alert">{form.error}</p>
 		{/if}
-		<button class="button">{text.start.submit}</button>
+		<button class="button" disabled={!valid.length}>{text.start.submit}</button>
 		<p class="muted small">{text.start.noAccount}</p>
 	</form>
 {/if}
@@ -73,5 +105,27 @@
 	}
 	.small {
 		font-size: 0.85rem;
+	}
+	select {
+		width: 100%;
+		min-height: var(--tap);
+		padding: 8px 10px;
+		background: var(--surface);
+		border: 1.5px solid var(--ink);
+		border-radius: 8px;
+		font: inherit;
+		color: inherit;
+	}
+	summary {
+		cursor: pointer;
+		min-height: var(--tap);
+		display: flex;
+		align-items: center;
+	}
+	.errors {
+		margin: 4px 0 12px;
+		padding-left: 18px;
+		font-family: ui-monospace, monospace;
+		overflow-wrap: anywhere;
 	}
 </style>
