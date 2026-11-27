@@ -1,5 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
+	import Compose from '#lib/turn/Compose.svelte';
+	import Log from '#lib/turn/Log.svelte';
 	import CopyLink from '#lib/CopyLink.svelte';
 	import CharacterCard from '#lib/character/CharacterCard.svelte';
 	import { MAX_INVENTORY_LENGTH, MAX_PLAYERS } from '#lib/engine/index.ts';
@@ -13,6 +19,27 @@
 	const sheetBySeat = $derived(new Map(data.sheets.map((s) => [s.seat, s])));
 	let importing = $state(false);
 	let savingInventory = $state(false);
+	let startingCrawl = $state(false);
+
+	const me = $derived(visitor.role === 'gm' ? 'gm' : visitor.role === 'player' ? visitor.seat : null);
+	const crawl = $derived(data.crawl);
+	const holder = $derived(crawl ? (crawl.spotlight.kind === 'gm' ? 'gm' : crawl.spotlight.seat) : null);
+	const nameOf = (seat: number) => data.people.find((p) => p.seat === seat)?.name ?? text.session.player(seat);
+	const turnLine = $derived.by(() => {
+		if (holder === null) return null;
+		if (holder === me) return me === 'gm' ? text.crawl.yourTurnGm : text.crawl.yourTurn;
+		if (holder === 'gm') return text.crawl.gmTurn;
+		return me === 'gm' ? text.crawl.waitingFor(nameOf(holder)) : text.crawl.playerTurn(nameOf(holder));
+	});
+
+	// No live updates: refresh when the app comes back into view.
+	onMount(() => {
+		const refresh = () => {
+			if (document.visibilityState === 'visible') invalidateAll();
+		};
+		document.addEventListener('visibilitychange', refresh);
+		return () => document.removeEventListener('visibilitychange', refresh);
+	});
 </script>
 
 <svelte:head>
@@ -32,6 +59,53 @@
 	{/if}
 </header>
 
+<section class="turn" class:mine={holder !== null && holder === me} aria-live="polite">
+	{#if crawl && turnLine}
+		<strong>{turnLine}</strong>
+		<span class="muted small">{text.crawl.status(text.crawl.dangers[crawl.danger], crawl.round)}</span>
+	{:else}
+		<strong>{text.crawl.notStarted}</strong>
+		{#if visitor.role === 'player'}<span class="muted small">{text.crawl.notStartedPlayer}</span>{/if}
+	{/if}
+</section>
+
+{#snippet crawlForm()}
+	<form
+		method="POST"
+		action="?/startCrawl"
+		class="stack-sm"
+		use:enhance={() => {
+			startingCrawl = true;
+			return async ({ update }) => {
+				await update();
+				startingCrawl = false;
+			};
+		}}
+	>
+		<fieldset class="stack-sm">
+			<legend><strong>{text.crawl.dangerLabel}</strong></legend>
+			{#each DANGER_LEVELS as danger (danger)}
+				<label class="choice">
+					<input type="radio" name="danger" value={danger} required checked={danger === (crawl?.danger ?? 'risky')} />
+					<span>{text.crawl.dangers[danger]} <span class="muted small">· {text.crawl.dangerHints[danger]}</span></span>
+				</label>
+			{/each}
+		</fieldset>
+		{#if form?.crawlError}
+			<p class="error" role="alert">{form.crawlError}</p>
+		{/if}
+		<button class="button" disabled={startingCrawl}>{text.crawl.start}</button>
+	</form>
+{/snippet}
+
+{#if visitor.role === 'gm' && !crawl}
+	<section class="card stack">
+		<h2>{text.crawl.startTitle}</h2>
+		<p class="muted">{text.crawl.startIntro}</p>
+		{@render crawlForm()}
+	</section>
+{/if}
+
 <section class="card map-card stack" aria-label={text.map.areas}>
 	{#if data.map.ok}
 		<h2>{data.map.view.dungeonName}</h2>
@@ -50,6 +124,22 @@
 		<p class="muted">{text.map.unavailable}</p>
 	{/if}
 </section>
+
+{#if me !== null}
+	<section class="card stack">
+		<Log log={data.log} people={data.people} />
+		<Compose sessionId={page.params.sessionId!} {me} {holder} serverError={form?.postError ?? null} />
+	</section>
+{/if}
+
+{#if visitor.role === 'gm' && crawl}
+	<section class="card">
+		<details>
+			<summary><span>{text.crawl.restartTitle}</span><span class="muted small">{text.crawl.restartHint}</span></summary>
+			{@render crawlForm()}
+		</details>
+	</section>
+{/if}
 
 {#if visitor.role === 'player'}
 	<section class="card stack" aria-label={text.character.importTitle}>
@@ -298,6 +388,41 @@
 	}
 	.pre {
 		white-space: pre-wrap;
+	}
+	.turn {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 4px 12px;
+		padding: 10px 14px;
+		border: 2px solid var(--ink);
+		border-radius: 14px;
+	}
+	.turn.mine {
+		background: var(--ink);
+		color: var(--paper);
+	}
+	.turn.mine .muted {
+		color: inherit;
+		opacity: 0.8;
+	}
+	fieldset {
+		border: none;
+		margin: 0;
+		padding: 0;
+	}
+	.choice {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: var(--tap);
+	}
+	.choice input {
+		width: 20px;
+		height: 20px;
+		accent-color: var(--ink);
+		flex: none;
 	}
 	.mood {
 		border-left: 3px solid var(--ink);

@@ -16,6 +16,8 @@ import {
 } from '#lib/engine/index.ts';
 import { importShadowdarklings } from '#lib/character/import.ts';
 import { mapView, type MapView } from '#lib/engine/map.ts';
+import { people, type LogRecord, type Person } from '#lib/engine/log.ts';
+import type { Crawl, Danger, LogEntry } from '#lib/engine/turns.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
 
@@ -119,6 +121,33 @@ export async function editInventory(sessionId: string, bySecret: string, invento
 	return run(sessionId, { type: 'editInventory', by: bySecret, inventory }, false);
 }
 
+export async function startCrawl(sessionId: string, bySecret: string, danger: Danger): Promise<CommandResult> {
+	return run(sessionId, { type: 'startCrawl', by: bySecret, danger }, false);
+}
+
+export async function postAction(sessionId: string, bySecret: string, text: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'postAction', by: bySecret, text }, false);
+}
+
+export async function postChat(sessionId: string, bySecret: string, text: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'postChat', by: bySecret, text }, false);
+}
+
+export async function passSpotlight(sessionId: string, bySecret: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'passSpotlight', by: bySecret }, false);
+}
+
+/** How much of the log a page load brings. Older entries stay in the database. */
+const LOG_WINDOW = 300;
+
+async function loadLog(sessionId: string): Promise<LogRecord[]> {
+	const { rows } = await db().query<{ id: string; payload: { entry: LogEntry } }>(
+		`SELECT id, payload FROM events WHERE session_id = $1 AND type = 'logged' ORDER BY id DESC LIMIT $2`,
+		[sessionId, LOG_WINDOW]
+	);
+	return rows.reverse().map((r) => ({ id: Number(r.id), entry: r.payload.entry }));
+}
+
 /** The map, or why it can't be shown. File errors are for the GM only. */
 export type MapLoad = { ok: true; view: MapView } | { ok: false; errors: string[] | null };
 
@@ -128,6 +157,9 @@ export type SessionView =
 			players: SessionState['players'] | null;
 			sheets: Sheet[];
 			map: MapLoad;
+			crawl: Crawl | null;
+			people: Person[];
+			log: LogRecord[];
 	  }
 	| { visitor: { role: 'unknown' } };
 
@@ -155,6 +187,9 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 		visitor,
 		players: visitor.role === 'gm' ? state.players : null,
 		sheets: sheets(state, secret),
-		map: await loadMap(state, visitor.role)
+		map: await loadMap(state, visitor.role),
+		crawl: state.crawl ?? null,
+		people: people(state),
+		log: await loadLog(sessionId)
 	};
 }

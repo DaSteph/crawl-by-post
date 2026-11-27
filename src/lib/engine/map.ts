@@ -6,6 +6,7 @@ import { formatDice } from './dice.ts';
 import { localize, type Dungeon, type ExitType, type LocalizedText, type Rect, type Cell, type Side } from '../dungeon/model.ts';
 import { initials } from '../character/model.ts';
 import type { SessionState, TokenColour } from './index.ts';
+import { spotlightHolder } from './turns.ts';
 
 export type MapMonster = { label: string; name: string; count: string };
 
@@ -23,7 +24,15 @@ export type MapArea = {
 
 export type MapExit = { from: string; to: string; at: Cell; side: Side; type: ExitType };
 
-export type MapToken = { seat: number; tokenColour: TokenColour; initials: string; area: string; cell: Cell };
+export type MapToken = {
+	seat: number;
+	tokenColour: TokenColour;
+	initials: string;
+	area: string;
+	cell: Cell;
+	/** True for the player holding the spotlight. */
+	spotlight: boolean;
+};
 
 export type MapView = { dungeonName: string; areas: MapArea[]; exits: MapExit[]; tokens: MapToken[] };
 
@@ -54,6 +63,7 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		.map(({ from, to, at, side, type }) => ({ from, to, at, side, type }));
 
 	const visibleAreas = new Set(areas.map((a) => a.id));
+	const holder = spotlightHolder(state);
 	const tokens: MapToken[] = state.players.flatMap((p) =>
 		p.character && p.position && visibleAreas.has(p.position.area)
 			? [
@@ -62,7 +72,8 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 						tokenColour: p.tokenColour,
 						initials: initials(p.character.name),
 						area: p.position.area,
-						cell: p.position.cell
+						cell: p.position.cell,
+						spotlight: holder === p.seat
 					}
 				]
 			: []

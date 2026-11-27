@@ -84,7 +84,68 @@ export const text = {
 		inventorySaved: 'Saved',
 		characters: 'Characters',
 		noCharacter: 'No character imported yet.',
-		token: (initials: string, seat: number) => `${initials}, player ${seat}`
+		token: (initials: string, seat: number) => `${initials}, player ${seat}`,
+		spotlightToken: (initials: string, seat: number) => `${initials}, player ${seat}, has the spotlight`
+	},
+
+	crawl: {
+		notStarted: 'The crawl hasn’t started yet.',
+		notStartedPlayer: 'The GM starts the crawl once everyone has imported a character. You can chat until then.',
+		startTitle: 'Start crawl',
+		startIntro:
+			'Initiative is rolled for every imported character (d20 + DEX). The winner goes first, then seat order, with your turn between every player turn.',
+		dangerLabel: 'Danger level',
+		dangers: { unsafe: 'Unsafe', risky: 'Risky', deadly: 'Deadly' },
+		dangerHints: {
+			unsafe: 'Wandering monsters checked every 3 rounds',
+			risky: 'Wandering monsters checked every 2 rounds',
+			deadly: 'Wandering monsters checked every round'
+		},
+		start: 'Start crawl',
+		restartTitle: 'New crawl',
+		restartHint: 'Rerolls initiative and resets the round count.',
+		status: (danger: string, round: number) => `Crawl · ${danger} · Round ${round}`,
+		yourTurn: 'Your turn',
+		yourTurnGm: 'Your turn: respond or pass',
+		gmTurn: 'The GM’s turn',
+		playerTurn: (name: string) => `${name}’s turn`,
+		waitingFor: (name: string) => `Waiting for ${name}`
+	},
+
+	log: {
+		title: 'Log',
+		empty: 'Nothing has happened yet.',
+		earlier: (n: number) => `Show ${n} earlier`,
+		crawlStarted: (danger: string) => `A new crawl begins. Danger: ${danger}.`,
+		initiative: 'Initiative',
+		rollLine: (d20: number, modifier: number, total: number) =>
+			`d20 ${d20} ${modifier < 0 ? '−' : '+'} ${Math.abs(modifier)} = ${total}`,
+		rollOff: (rolls: string) => `Tie, rolled off: ${rolls}`,
+		goesFirst: (name: string) => `${name} goes first.`,
+		round: (n: number) => `Round ${n}`,
+		pass: 'The GM passes.',
+		chat: 'chat',
+		chatRun: (n: number) => `+${n} chat messages`,
+		hideChat: 'Hide chat',
+		readMore: 'Read more',
+		readLess: 'Show less',
+		gm: 'GM'
+	},
+
+	compose: {
+		label: 'Your post',
+		placeholderTurn: 'What do you do?',
+		placeholderGm: 'Describe what happens',
+		placeholderChat: 'Table talk',
+		postTurn: 'Post turn',
+		postResponse: 'Post response',
+		pass: 'Pass',
+		postChat: 'Post as chat',
+		outOfTurn: 'It’s not your turn, so this goes into the log as quiet chat.',
+		count: (n: number, over: number) => `${n} / ${over}`,
+		tooLong: 'Long post: shorter turns keep the game moving.',
+		offline: 'You’re offline. Your text is kept here; post it once you’re connected again.',
+		failed: 'That didn’t go through. Your text is kept here; try again.'
 	},
 
 	colours: {

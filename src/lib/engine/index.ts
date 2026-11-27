@@ -7,6 +7,19 @@
  */
 import { initials, type Character } from '../character/model.ts';
 import { cellsOf, type Cell, type Dungeon } from '../dungeon/model.ts';
+import {
+	passSpotlight,
+	postAction,
+	postChat,
+	startCrawl,
+	type Crawl,
+	type LogEntry,
+	type PassSpotlight,
+	type PostAction,
+	type PostChat,
+	type Spotlight,
+	type StartCrawl
+} from './turns.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -57,6 +70,8 @@ export type SessionState = {
 	dungeonId: string;
 	/** Ids of the rooms and corridor segments everyone can see. */
 	revealed: string[];
+	/** Absent until the GM starts the first crawl. */
+	crawl?: Crawl;
 };
 
 export type Command =
@@ -65,14 +80,22 @@ export type Command =
 	| { type: 'addPlayerSlot'; by: string; secret: string }
 	/** The character is already parsed by the importer; the dungeon gives the start room. */
 	| { type: 'importCharacter'; by: string; character: Character; dungeon: Dungeon }
-	| { type: 'editInventory'; by: string; inventory: string };
+	| { type: 'editInventory'; by: string; inventory: string }
+	| StartCrawl
+	| PostAction
+	| PostChat
+	| PassSpotlight;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
 	| { type: 'areaRevealed'; areaId: string }
 	| { type: 'playerSlotAdded'; seat: number; tokenColour: TokenColour }
 	| { type: 'characterImported'; seat: number; name: string }
-	| { type: 'inventoryEdited'; seat: number };
+	| { type: 'inventoryEdited'; seat: number }
+	/** A log entry. The server stores these as the session log. */
+	| { type: 'logged'; entry: LogEntry }
+	| { type: 'spotlightChanged'; spotlight: Spotlight }
+	| { type: 'roundCompleted'; round: number };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -111,9 +134,22 @@ export function applyCommand(
 	}
 
 	if (!state) return { ok: false, reason: 'No such session.' };
-	if (command.type === 'addPlayerSlot') return addPlayerSlot(state, command);
-	if (command.type === 'importCharacter') return importCharacter(state, command);
-	return editInventory(state, command);
+	switch (command.type) {
+		case 'addPlayerSlot':
+			return addPlayerSlot(state, command);
+		case 'importCharacter':
+			return importCharacter(state, command);
+		case 'editInventory':
+			return editInventory(state, command);
+		case 'startCrawl':
+			return startCrawl(state, command, deps);
+		case 'postAction':
+			return postAction(state, command, deps);
+		case 'postChat':
+			return postChat(state, command, deps);
+		case 'passSpotlight':
+			return passSpotlight(state, command, deps);
+	}
 }
 
 type CommandOf<T extends Command['type']> = Extract<Command, { type: T }>;

@@ -73,10 +73,17 @@
 		<g
 			transform="translate({(token.cell.x + 0.5) * C} {(token.cell.y + 0.5) * C})"
 			class="player-token {token.tokenColour}"
+			class:spotlight={token.spotlight}
 			role="img"
-			aria-label={text.character.token(token.initials, token.seat)}
+			aria-label={token.spotlight
+				? text.character.spotlightToken(token.initials, token.seat)
+				: text.character.token(token.initials, token.seat)}
 		>
-			<circle r={C * 0.42} />
+			{#if token.spotlight}
+				<circle r={C * 0.42} class="pulse" />
+				<circle r={C * 0.42 + 3.5} class="ring" />
+			{/if}
+			<circle r={C * 0.42} class="disc" />
 			<text text-anchor="middle" dominant-baseline="central">{token.initials}</text>
 		</g>
 	{/each}
@@ -125,25 +132,54 @@
 		font-size: 11px;
 		font-weight: 700;
 	}
-	.player-token circle {
+	.player-token .disc {
 		stroke: var(--ink);
 		stroke-width: 1.5;
+	}
+	.ring {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 3;
+	}
+	.pulse {
+		fill: none;
+		stroke: var(--ink);
+		stroke-width: 2;
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: pulse 2.2s ease-out infinite;
+	}
+	@keyframes pulse {
+		0% {
+			transform: scale(1);
+			opacity: 0.9;
+		}
+		100% {
+			transform: scale(1.7);
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.pulse {
+			animation: none;
+			opacity: 0;
+		}
 	}
 	.player-token text {
 		fill: var(--token-text);
 		font-size: 9.5px;
 		font-weight: 700;
 	}
-	.player-token.blue circle {
+	.player-token.blue .disc {
 		fill: var(--token-blue);
 	}
-	.player-token.purple circle {
+	.player-token.purple .disc {
 		fill: var(--token-purple);
 	}
-	.player-token.green circle {
+	.player-token.green .disc {
 		fill: var(--token-green);
 	}
-	.player-token.magenta circle {
+	.player-token.magenta .disc {
 		fill: var(--token-magenta);
 	}
 	.door.hidden rect {
