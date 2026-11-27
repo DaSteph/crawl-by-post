@@ -9,12 +9,15 @@ import {
 	passSpotlight,
 	postAction,
 	postChat,
+	resolveTimeout,
 	rollDamage,
 	setAreaRevealed,
 	setChallenge,
+	setTurnTimeout,
 	startCrawl
 } from '#lib/server/sessions.ts';
 import type { Danger } from '#lib/engine/turns.ts';
+import type { TimeoutResolution } from '#lib/engine/timeouts.ts';
 import type { CheckChoice, Edge } from '#lib/engine/challenges.ts';
 import type { Ability } from '#lib/character/model.ts';
 import { text } from '#lib/text.ts';
@@ -35,6 +38,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		map: view.map,
 		sheets: view.sheets,
 		crawl: view.crawl,
+		timer: view.timer,
 		people: view.people,
 		log: view.log,
 		players:
@@ -115,6 +119,21 @@ export const actions: Actions = {
 	damage: async ({ params }) => {
 		const result = await rollDamage(params.sessionId, params.secret);
 		if (!result.ok) return fail(400, { challengeError: result.reason });
+	},
+
+	turnTimeout: async ({ params, request }) => {
+		const hours = Number((await request.formData()).get('hours'));
+		const result = await setTurnTimeout(params.sessionId, params.secret, hours);
+		if (!result.ok) return fail(400, { timeoutError: result.reason });
+		return { timeoutSaved: true };
+	},
+
+	/** `resolution` is `skip`, `wait` or `playAs`; `text` is the post for `playAs` on an action turn. */
+	resolveTimeout: async ({ params, request }) => {
+		const form = await request.formData();
+		const resolution = String(form.get('resolution') ?? '') as TimeoutResolution;
+		const result = await resolveTimeout(params.sessionId, params.secret, resolution, String(form.get('text') ?? ''));
+		if (!result.ok) return fail(400, { resolveError: result.reason });
 	},
 
 	pass: async ({ params }) => {

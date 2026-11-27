@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { parseDungeon } from '../dungeon/parse.ts';
 import { importShadowdarklings } from '../character/import.ts';
 import { applyCommand, type Command, type Deps, type SessionState } from '../engine/index.ts';
-import { spotlightPush } from './plan.ts';
+import { planPush } from './plan.ts';
 
 const parsed = parseDungeon(readFileSync('dungeons/example.yaml', 'utf8'), 'example');
 if (!parsed.ok) throw new Error('the example dungeon must parse');
@@ -29,7 +29,7 @@ function dice(...results: number[]): Deps {
 function step(state: SessionState | null, command: Command, deps: Deps = dice()) {
 	const result = applyCommand(state, command, deps);
 	if (!result.ok) throw new Error(result.reason);
-	return { state: result.state, push: spotlightPush(result.state, result.events, 'by' in command ? command.by : null) };
+	return { state: result.state, push: planPush(result.state, result.events, 'by' in command ? command.by : null) };
 }
 
 /** Two players; player 1 wins initiative. */
@@ -104,6 +104,32 @@ describe('who gets a push', () => {
 			players: state.players.map((p) => (p.seat === 1 ? { ...p, secret: 'p1-new' } : p))
 		};
 		const events = [{ type: 'spotlightChanged', spotlight: { kind: 'player', seat: 1 } } as const];
-		expect(spotlightPush(regenerated, events, 'gm')).toMatchObject({ secret: 'p1-new', url: '/session/s1/p1-new' });
+		expect(planPush(regenerated, events, 'gm')).toMatchObject({ secret: 'p1-new', url: '/session/s1/p1-new' });
+	});
+
+	it('reminds the spotlight holder at half time', () => {
+		const { state } = crawling();
+		const { push } = step(state, { type: 'turnTimerFired', clock: state.turnClock!.id, kind: 'reminder' });
+		expect(push).toMatchObject({ secret: 'p1', body: 'Reminder: Your turn. What do you do?' });
+	});
+
+	it('pushes the GM when a player’s turn times out, and the next player when a GM turn does', () => {
+		const { state } = crawling();
+		const timedOut = step(state, { type: 'turnTimerFired', clock: state.turnClock!.id, kind: 'timeout' });
+		expect(timedOut.push).toMatchObject({
+			secret: 'gm',
+			body: 'Ayla’s turn timed out. Skip, wait or play for them.'
+		});
+
+		const gmTurn = step(state, { type: 'postAction', by: 'p1', text: 'I wait' }).state;
+		const passed = step(gmTurn, { type: 'turnTimerFired', clock: gmTurn.turnClock!.id, kind: 'timeout' });
+		expect(passed.push).toMatchObject({ secret: 'p2', body: 'Your turn. What do you do?' });
+	});
+
+	it('pushes nobody for a job that fired after its turn was over', () => {
+		const { state } = crawling();
+		const after = step(state, { type: 'postAction', by: 'p1', text: 'I wait' }).state;
+		const { push } = step(after, { type: 'turnTimerFired', clock: state.turnClock!.id, kind: 'reminder' });
+		expect(push).toBeNull();
 	});
 });

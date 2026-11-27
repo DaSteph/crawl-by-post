@@ -16,7 +16,7 @@ npm run dev
 - `npm test` runs the tests (Vitest): game engine, dungeon file parser, map geometry, Shadowdarklings importer.
 - `npm run check` type-checks the project.
 
-The database schema is created automatically on server start.
+The database schema is created automatically on server start. Turn reminders and timeouts are jobs in [pg-boss](https://github.com/timgit/pg-boss), which runs inside the app process and keeps its tables in the `pgboss` schema of the same database. Run one app process per database: every process works the job queue.
 
 For push notifications locally, generate VAPID keys (`npx web-push generate-vapid-keys`) and put them into `.env`. Browsers allow push on `http://localhost`; on a phone you need HTTPS (e.g. the deployed stack or a tunnel). On iPhone and iPad, push only works from the home screen app.
 

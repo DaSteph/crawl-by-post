@@ -4,6 +4,7 @@
  */
 import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts';
 import type { Challenge, ChallengeEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
+import type { TimeoutEntry } from './timeouts.ts';
 
 export const DANGER_LEVELS = ['unsafe', 'risky', 'deadly'] as const;
 export type Danger = (typeof DANGER_LEVELS)[number];
@@ -50,11 +51,12 @@ export type LogEntry = { at: string } & (
 			winner: number;
 	  }
 	| { kind: 'round'; round: number }
-	/** A spotlight post by a player. */
-	| { kind: 'action'; seat: number; text: string }
+	/** A spotlight post by a player. `playedByGm` when the GM played an absent player's turn. */
+	| { kind: 'action'; seat: number; text: string; playedByGm?: true }
 	/** A GM post during the GM's turn. */
 	| { kind: 'response'; text: string }
-	| { kind: 'pass' }
+	/** `timedOut` when the GM's turn ran out and passed by itself. */
+	| { kind: 'pass'; timedOut?: true }
 	/** Anything posted out of turn. */
 	| { kind: 'chat'; author: number | 'gm'; text: string }
 	/** A token stopped at the doorway of an unknown area. Which area stays secret. */
@@ -65,6 +67,7 @@ export type LogEntry = { at: string } & (
 	/** The player backed out of a challenge. */
 	| { kind: 'declined'; seat: number }
 	| DamageEntry
+	| TimeoutEntry
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };
@@ -85,7 +88,7 @@ function author(state: SessionState, secret: string): 'gm' | number | null {
 	return state.players.find((p) => p.secret === secret)?.seat ?? null;
 }
 
-function cleanText(text: string): { ok: true; text: string } | { ok: false; reason: string } {
+export function cleanText(text: string): { ok: true; text: string } | { ok: false; reason: string } {
 	const clean = text.replace(/\r\n/g, '\n').trim();
 	if (!clean) return { ok: false, reason: 'Write something first.' };
 	if (clean.length > MAX_POST_LENGTH) {
@@ -94,7 +97,7 @@ function cleanText(text: string): { ok: true; text: string } | { ok: false; reas
 	return { ok: true, text: clean };
 }
 
-function logged(entry: LogEntry): EngineEvent {
+export function logged(entry: LogEntry): EngineEvent {
 	return { type: 'logged', entry };
 }
 
@@ -144,7 +147,7 @@ export function startCrawl(state: SessionState, command: StartCrawl, deps: Deps)
 }
 
 /** Hands the spotlight from the GM to the next player, counting a round when it wraps. */
-function nextPlayer(state: SessionState, crawl: Crawl, afterSeat: number, at: string): CommandResult {
+export function nextPlayer(state: SessionState, crawl: Crawl, afterSeat: number, at: string): CommandResult {
 	const index = (crawl.order.indexOf(afterSeat) + 1) % crawl.order.length;
 	const spotlight: Spotlight = { kind: 'player', seat: crawl.order[index] };
 	const events: EngineEvent[] = [];
@@ -186,7 +189,11 @@ export function postAction(state: SessionState, command: PostAction, deps: Deps)
 	return {
 		ok: true,
 		state: { ...state, crawl: { ...crawl, spotlight } },
-		events: [logged({ at, kind: 'action', seat, text: text.text }), { type: 'spotlightChanged', spotlight }]
+		events: [
+			logged({ at, kind: 'action', seat, text: text.text }),
+			{ type: 'spotlightChanged', spotlight },
+			{ type: 'playerActionCompleted', seat }
+		]
 	};
 }
 

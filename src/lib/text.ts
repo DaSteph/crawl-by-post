@@ -123,7 +123,30 @@ export const text = {
 		yourTurnGm: 'Your turn: respond or pass',
 		gmTurn: 'The GM’s turn',
 		playerTurn: (name: string) => `${name}’s turn`,
-		waitingFor: (name: string) => `Waiting for ${name}`
+		waitingFor: (name: string) => `Waiting for ${name}`,
+		timeLeft: (hours: number) => (hours < 1 ? 'under 1 h left' : `${hours} h left`),
+		timedOut: 'timed out: the GM decides'
+	},
+
+	timeout: {
+		title: (name: string) => `${name}’s turn timed out`,
+		intro: 'An absent player is a ruling, not a punishment. You decide what happens.',
+		skip: 'Skip this turn',
+		wait: (hours: number) => `Wait another ${hours} h`,
+		playAs: (name: string) => `Play ${name}`,
+		playAsLabel: (name: string) => `What does ${name} do?`,
+		playAsPlaceholder: 'Keep it in character and cautious',
+		playAsNote: 'Posted as their action, marked “played by the GM” in the log.',
+		postAs: (name: string) => `Post for ${name}`,
+		rollFor: (name: string) => `Roll for ${name}`,
+		rollDamageFor: (name: string) => `Roll damage for ${name}`,
+		cancel: 'Back',
+		settingsTitle: 'Turn timeout',
+		settingsHint: (hours: number) =>
+			`Each turn, yours included, may take ${hours} h. The one holding the spotlight is reminded at half time. Your turn passes by itself when it runs out; for a player’s turn, you decide.`,
+		hoursLabel: 'Hours per turn',
+		save: 'Save',
+		saved: 'Saved'
 	},
 
 	challenge: {
@@ -172,6 +195,15 @@ export const text = {
 		goesFirst: (name: string) => `${name} goes first.`,
 		round: (n: number) => `Round ${n}`,
 		pass: 'The GM passes.',
+		autoPass: 'The GM’s turn timed out and passes on.',
+		timedOut: (name: string) => `${name}’s turn timed out. The GM decides.`,
+		timeoutResolved: {
+			skip: (name: string) => `The GM skips ${name}’s turn.`,
+			wait: (name: string) => `The GM waits longer for ${name}.`,
+			playAs: (name: string) => `The GM plays ${name} this turn.`
+		},
+		timeoutChanged: (hours: number) => `The GM sets the turn timeout to ${hours} h.`,
+		playedByGm: 'played by the GM',
 		doorway: (name: string) => `${name} stops at a doorway.`,
 		revealed: (area: string) => `The GM reveals ${area}.`,
 		chat: 'chat',
@@ -214,6 +246,8 @@ export const text = {
 		gmTurn: (name: string) => `${name} acted. Respond or pass.`,
 		challenge: 'The GM sets a challenge for you. Roll or back out.',
 		damage: 'Hit! Roll your damage.',
+		reminder: (body: string) => `Reminder: ${body}`,
+		playerTimedOut: (name: string) => `${name}’s turn timed out. Skip, wait or play for them.`,
 		testTitle: 'crawl-by-post',
 		testBody: 'Test notification: you’re all set.'
 	},

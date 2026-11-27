@@ -10,6 +10,8 @@
 	import Log from '#lib/turn/Log.svelte';
 	import ChallengeForm from '#lib/turn/ChallengeForm.svelte';
 	import ChallengePrompt from '#lib/turn/ChallengePrompt.svelte';
+	import TimeoutPrompt from '#lib/turn/TimeoutPrompt.svelte';
+	import { MAX_TURN_TIMEOUT_HOURS, MIN_TURN_TIMEOUT_HOURS } from '#lib/engine/timeouts.ts';
 	import CopyLink from '#lib/CopyLink.svelte';
 	import CharacterCard from '#lib/character/CharacterCard.svelte';
 	import { MAX_INVENTORY_LENGTH, MAX_PLAYERS } from '#lib/engine/index.ts';
@@ -25,6 +27,7 @@
 	let importing = $state(false);
 	let savingInventory = $state(false);
 	let startingCrawl = $state(false);
+	let savingTimeout = $state(false);
 	let moving = $state(false);
 	let moveForm: HTMLFormElement | undefined = $state();
 	let moveTarget = $state<Cell | null>(null);
@@ -81,6 +84,18 @@
 		return me === 'gm' ? text.crawl.waitingFor(nameOf(holder)) : text.crawl.playerTurn(nameOf(holder));
 	});
 
+	const timer = $derived(data.timer);
+	/** GM: the timed-out player's turn waiting for a decision. */
+	const timedOutTurn = $derived(
+		visitor.role === 'gm' && timer.timedOut && spotlight && spotlight.kind !== 'gm' ? spotlight : null
+	);
+	const timeLine = $derived.by(() => {
+		if (!crawl) return null;
+		if (timer.timedOut) return text.crawl.timedOut;
+		if (!timer.timeoutAt) return null;
+		return text.crawl.timeLeft(Math.floor((Date.parse(timer.timeoutAt) - Date.now()) / 3600_000));
+	});
+
 	// No live updates: refresh when the app comes back into view, or when a turn push arrives.
 	onMount(() => {
 		const refresh = () => {
@@ -120,7 +135,9 @@
 <section class="turn" class:mine={holder !== null && holder === me} aria-live="polite">
 	{#if crawl && turnLine}
 		<strong>{turnLine}</strong>
-		<span class="muted small">{text.crawl.status(text.crawl.dangers[crawl.danger], crawl.round)}</span>
+		<span class="muted small"
+			>{text.crawl.status(text.crawl.dangers[crawl.danger], crawl.round)}{#if timeLine} · {timeLine}{/if}</span
+		>
 	{:else}
 		<strong>{text.crawl.notStarted}</strong>
 		{#if visitor.role === 'player'}<span class="muted small">{text.crawl.notStartedPlayer}</span>{/if}
@@ -260,6 +277,14 @@
 				error={form?.challengeError ?? null}
 			/>
 		{/if}
+		{#if timedOutTurn}
+			<TimeoutPrompt
+				spotlight={timedOutTurn}
+				name={nameOf(timedOutTurn.seat)}
+				hours={timer.hours}
+				error={form?.resolveError ?? null}
+			/>
+		{/if}
 		{#if challengeSheet && spotlight?.kind === 'gm'}
 			<details class="challenge" open={spotlight.preConsent ?? false}>
 				<summary>
@@ -289,6 +314,47 @@
 		<details>
 			<summary><span>{text.crawl.restartTitle}</span><span class="muted small">{text.crawl.restartHint}</span></summary>
 			{@render crawlForm()}
+		</details>
+	</section>
+{/if}
+
+{#if visitor.role === 'gm'}
+	<section class="card">
+		<details open={Boolean(form?.timeoutError)}>
+			<summary><span>{text.timeout.settingsTitle}</span><span class="muted small">{timer.hours} h</span></summary>
+			<form
+				method="POST"
+				action="?/turnTimeout"
+				class="stack-sm"
+				use:enhance={() => {
+					savingTimeout = true;
+					return async ({ update }) => {
+						await update({ reset: false });
+						savingTimeout = false;
+					};
+				}}
+			>
+				<p class="muted small">{text.timeout.settingsHint(timer.hours)}</p>
+				<label for="hours"><strong>{text.timeout.hoursLabel}</strong></label>
+				<div class="row">
+					<input
+						id="hours"
+						name="hours"
+						type="number"
+						inputmode="numeric"
+						min={MIN_TURN_TIMEOUT_HOURS}
+						max={MAX_TURN_TIMEOUT_HOURS}
+						step="1"
+						required
+						value={timer.hours}
+					/>
+					<button class="button" disabled={savingTimeout}>{text.timeout.save}</button>
+					{#if form?.timeoutSaved}<span class="muted small" role="status">{text.timeout.saved}</span>{/if}
+				</div>
+				{#if form?.timeoutError}
+					<p class="error" role="alert">{form.timeoutError}</p>
+				{/if}
+			</form>
 		</details>
 	</section>
 {/if}
@@ -553,6 +619,17 @@
 	}
 	.pre {
 		white-space: pre-wrap;
+	}
+	input[type='number'] {
+		width: 6em;
+		min-height: var(--tap);
+		font: inherit;
+		box-sizing: border-box;
+		padding: 8px 10px;
+		border: 1.5px solid var(--ink);
+		border-radius: var(--radius);
+		background: var(--surface);
+		color: inherit;
 	}
 	.turn {
 		display: flex;

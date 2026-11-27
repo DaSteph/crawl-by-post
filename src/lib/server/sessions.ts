@@ -23,6 +23,8 @@ import type { CheckChoice, Edge } from '#lib/engine/challenges.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
 import { pushAfterCommand } from './push.ts';
+import { applyTimerEvents, type TurnTimerJob } from './jobs.ts';
+import { timeoutAt, turnTimeoutHours, type TimeoutResolution } from '#lib/engine/timeouts.ts';
 
 const deps: Deps = {
 	dice: (sides) => randomInt(1, sides + 1),
@@ -51,7 +53,8 @@ async function run(sessionId: string, command: Command, isNew: boolean): Promise
 		}
 
 		const result = applyCommand(state, command, deps);
-		if (!result.ok) {
+		// A rejected command, or one that changed nothing (a timer for a turn that is over), leaves no trace.
+		if (!result.ok || result.events.length === 0) {
 			await client.query('ROLLBACK');
 			return result;
 		}
@@ -68,6 +71,7 @@ async function run(sessionId: string, command: Command, isNew: boolean): Promise
 				event
 			]);
 		}
+		await applyTimerEvents(client, sessionId, result.events);
 		await client.query('COMMIT');
 		pushAfterCommand(result.state, result.events, 'by' in command ? command.by : null);
 		return result;
@@ -162,6 +166,25 @@ export async function passSpotlight(sessionId: string, bySecret: string): Promis
 	return run(sessionId, { type: 'passSpotlight', by: bySecret }, false);
 }
 
+export async function setTurnTimeout(sessionId: string, bySecret: string, hours: number): Promise<CommandResult> {
+	return run(sessionId, { type: 'setTurnTimeout', by: bySecret, hours }, false);
+}
+
+export async function resolveTimeout(
+	sessionId: string,
+	bySecret: string,
+	resolution: TimeoutResolution,
+	text: string
+): Promise<CommandResult> {
+	return run(sessionId, { type: 'resolveTimeout', by: bySecret, resolution, text }, false);
+}
+
+/** Called by the job worker when a turn timer comes due. */
+export async function fireTurnTimer(job: TurnTimerJob): Promise<void> {
+	const result = await run(job.sessionId, { type: 'turnTimerFired', clock: job.clock, kind: job.kind }, false);
+	if (!result.ok && result.reason !== 'No such session.') console.error('Turn timer failed:', result.reason);
+}
+
 /** Runs a command that needs the session's dungeon model. */
 async function runWithDungeon(
 	sessionId: string,
@@ -197,6 +220,12 @@ async function loadLog(sessionId: string): Promise<LogRecord[]> {
 	return rows.reverse().map((r) => ({ id: Number(r.id), entry: r.payload.entry }));
 }
 
+/**
+ * The turn clock as the page shows it: the session's timeout, when the current
+ * turn runs out, and whether a timed-out player turn waits for the GM.
+ */
+export type TurnTimer = { hours: number; timeoutAt: string | null; timedOut: boolean };
+
 /** The map, or why it can't be shown. File errors are for the GM only. */
 export type MapLoad = { ok: true; view: MapView } | { ok: false; errors: string[] | null };
 
@@ -207,6 +236,7 @@ export type SessionView =
 			sheets: Sheet[];
 			map: MapLoad;
 			crawl: Crawl | null;
+			timer: TurnTimer;
 			people: Person[];
 			log: LogRecord[];
 	  }
@@ -245,6 +275,11 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 		sheets: sheets(state, secret),
 		map: await loadMap(state, visitor),
 		crawl: state.crawl ?? null,
+		timer: {
+			hours: turnTimeoutHours(state),
+			timeoutAt: timeoutAt(state)?.toISOString() ?? null,
+			timedOut: Boolean(state.crawl && state.turnClock?.timedOut)
+		},
 		people: people(state),
 		log: await loadLog(sessionId)
 	};

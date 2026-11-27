@@ -31,6 +31,16 @@ import {
 	type RollDamage,
 	type SetChallenge
 } from './challenges.ts';
+import {
+	keepTime,
+	resolveTimeout,
+	setTurnTimeout,
+	turnTimerFired,
+	type ResolveTimeout,
+	type SetTurnTimeout,
+	type TurnClock,
+	type TurnTimerFired
+} from './timeouts.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -83,6 +93,10 @@ export type SessionState = {
 	revealed: string[];
 	/** Absent until the GM starts the first crawl. */
 	crawl?: Crawl;
+	/** Hours each spotlight turn may take, for GM and players alike. Absent means the default. */
+	turnTimeoutHours?: number;
+	/** The clock of the current spotlight turn. Kept outside `crawl` so its id keeps counting across crawls. */
+	turnClock?: TurnClock;
 };
 
 export type Command =
@@ -101,7 +115,10 @@ export type Command =
 	| SetChallenge
 	| AcceptChallenge
 	| DeclineChallenge
-	| RollDamage;
+	| RollDamage
+	| SetTurnTimeout
+	| TurnTimerFired
+	| ResolveTimeout;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -115,7 +132,17 @@ export type EngineEvent =
 	/** A log entry. The server stores these as the session log. */
 	| { type: 'logged'; entry: LogEntry }
 	| { type: 'spotlightChanged'; spotlight: Spotlight }
-	| { type: 'roundCompleted'; round: number };
+	| { type: 'roundCompleted'; round: number }
+	/** A player's action turn is over: they acted, or the GM skipped or played it. Light ticks build on this. */
+	| { type: 'playerActionCompleted'; seat: number }
+	/** The server schedules a reminder (when not null) and a timeout for clock `clock`. */
+	| { type: 'turnTimerStarted'; clock: number; reminderAt: string | null; timeoutAt: string }
+	/** The server cancels whatever is still scheduled for clock `clock`. */
+	| { type: 'turnTimerStopped'; clock: number }
+	| { type: 'turnReminderDue'; holder: 'gm' | number }
+	/** A player's turn ran out; the GM decides what happens. */
+	| { type: 'playerTimedOut'; seat: number }
+	| { type: 'turnTimeoutChanged'; hours: number };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -154,6 +181,10 @@ export function applyCommand(
 	}
 
 	if (!state) return { ok: false, reason: 'No such session.' };
+	return keepTime(dispatch(state, command, deps), deps);
+}
+
+function dispatch(state: SessionState, command: Exclude<Command, { type: 'createSession' }>, deps: Deps): CommandResult {
 	switch (command.type) {
 		case 'addPlayerSlot':
 			return addPlayerSlot(state, command);
@@ -181,6 +212,12 @@ export function applyCommand(
 			return declineChallenge(state, command, deps);
 		case 'rollDamage':
 			return rollDamageCommand(state, command, deps);
+		case 'setTurnTimeout':
+			return setTurnTimeout(state, command, deps);
+		case 'turnTimerFired':
+			return turnTimerFired(state, command, deps);
+		case 'resolveTimeout':
+			return resolveTimeout(state, command, deps);
 	}
 }
 

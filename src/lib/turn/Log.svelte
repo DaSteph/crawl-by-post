@@ -61,7 +61,10 @@
 	{#if e.kind === 'action'}
 		<li class="entry">
 			{@render who(e.seat)}
-			<div><span class="meta">{nameOf(e.seat)}</span>{@render post(record, e.text)}</div>
+			<div>
+				<span class="meta">{nameOf(e.seat)}{#if e.playedByGm} · <strong>{text.log.playedByGm}</strong>{/if}</span>
+				{@render post(record, e.text)}
+			</div>
 		</li>
 	{:else if e.kind === 'response'}
 		<li class="entry">
@@ -129,7 +132,13 @@
 	{:else if e.kind === 'crawlStarted'}
 		<li class="event">{text.log.crawlStarted(text.crawl.dangers[e.danger])}</li>
 	{:else if e.kind === 'pass'}
-		<li class="event">{text.log.pass}</li>
+		<li class="event">{e.timedOut ? text.log.autoPass : text.log.pass}</li>
+	{:else if e.kind === 'timedOut'}
+		<li class="event">{text.log.timedOut(nameOf(e.seat))}</li>
+	{:else if e.kind === 'timeoutResolved'}
+		<li class="event">{text.log.timeoutResolved[e.resolution](nameOf(e.seat))}</li>
+	{:else if e.kind === 'timeoutChanged'}
+		<li class="event">{text.log.timeoutChanged(e.hours)}</li>
 	{:else if e.kind === 'doorway'}
 		<li class="event">{text.log.doorway(nameOf(e.seat))}</li>
 	{:else if e.kind === 'revealed'}

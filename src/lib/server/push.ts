@@ -1,12 +1,12 @@
 /**
  * Web push delivery: stores subscriptions per device and participant link, and
- * sends what `spotlightPush` decides. Web push is the only channel.
+ * sends what `planPush` decides. Web push is the only channel.
  */
 import { sendNotification, WebPushError, type PushSubscription } from 'web-push';
 import { PUBLIC_SOURCE_URL, PUBLIC_VAPID_KEY } from '$app/env/public';
 import { VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '$app/env/private';
 import type { EngineEvent, SessionState } from '#lib/engine/index.ts';
-import { spotlightPush, type PushMessage } from '#lib/push/plan.ts';
+import { planPush, type PushMessage } from '#lib/push/plan.ts';
 import { text } from '#lib/text.ts';
 import { db } from './db.ts';
 
@@ -93,7 +93,7 @@ async function deliver(sessionId: string, message: PushMessage): Promise<void> {
  */
 export function pushAfterCommand(state: SessionState, events: EngineEvent[], by: string | null): void {
 	if (!enabled) return;
-	const message = spotlightPush(state, events, by);
+	const message = planPush(state, events, by);
 	if (!message) return;
 	deliver(state.id, message).catch((e) => console.error('Push delivery failed:', e));
 }
