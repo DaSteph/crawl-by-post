@@ -1,0 +1,1319 @@
+{
+  "name": "Gelan (Arden Vul)",
+  "stats": {
+    "STR": 15,
+    "DEX": 18,
+    "CON": 13,
+    "INT": 12,
+    "WIS": 10,
+    "CHA": 10
+  },
+  "rolledStats": {
+    "STR": 13,
+    "DEX": 16,
+    "CON": 13,
+    "INT": 12,
+    "WIS": 10,
+    "CHA": 10
+  },
+  "ancestry": "Elf",
+  "class": "Ranger",
+  "level": 3,
+  "levels": [
+    {
+      "talentRolledName": "StatBonus",
+      "HitPointRoll": 3,
+      "level": 1,
+      "Rolled12ChosenTalentDesc": "",
+      "Rolled12TalentOrTwoStatPoints": "",
+      "stoutHitPointRoll": 0,
+      "talentRolledDesc": "+2 to Strength, Dexterity, or Intelligence",
+      "Rolled12ChosenTalentName": ""
+    },
+    {
+      "HitPointRoll": 6,
+      "stoutHitPointRoll": 0,
+      "talentRolledDesc": "",
+      "Rolled12TalentOrTwoStatPoints": "",
+      "Rolled12ChosenTalentDesc": "",
+      "level": 2,
+      "Rolled12ChosenTalentName": "",
+      "talentRolledName": ""
+    },
+    {
+      "Rolled12ChosenTalentName": "",
+      "level": 3,
+      "talentRolledName": "StatBonus",
+      "Rolled12ChosenTalentDesc": "",
+      "HitPointRoll": 3,
+      "stoutHitPointRoll": 0,
+      "talentRolledDesc": "+2 to Strength, Dexterity, or Intelligence",
+      "Rolled12TalentOrTwoStatPoints": ""
+    }
+  ],
+  "XP": 12,
+  "ambitionTalentLevel": {
+    "Rolled12ChosenTalentDesc": "",
+    "level": 1,
+    "talentRolledName": "",
+    "stoutHitPointRoll": 0,
+    "Rolled12ChosenTalentName": "",
+    "Rolled12TalentOrTwoStatPoints": "",
+    "HitPointRoll": 0,
+    "talentRolledDesc": ""
+  },
+  "title": "Wayfarer",
+  "alignment": "Neutral",
+  "background": "Feytouched",
+  "deity": "Gede",
+  "maxHitPoints": 13,
+  "armorClass": 15,
+  "gearSlotsTotal": 15,
+  "gearSlotsUsed": 8,
+  "bonuses": [
+    {
+      "bonusTo": "RangedWeapons",
+      "bonusName": "AttackBonus",
+      "sourceCategory": "Ability",
+      "bonusAmount": 1,
+      "sourceType": "Ancestry",
+      "sourceName": "Elf",
+      "name": "FarSight",
+      "gainedAtLevel": 1
+    },
+    {
+      "gainedAtLevel": 1,
+      "sourceCategory": "Talent",
+      "name": "StatBonus",
+      "sourceName": "Ranger",
+      "sourceType": "Class",
+      "bonusName": "StatBonus",
+      "bonusTo": "DEX:+2"
+    },
+    {
+      "bonusTo": "STR:+2",
+      "gainedAtLevel": 3,
+      "sourceCategory": "Talent",
+      "bonusName": "StatBonus",
+      "sourceType": "Class",
+      "sourceName": "Ranger",
+      "name": "StatBonus"
+    }
+  ],
+  "goldRolled": 40,
+  "gold": 22,
+  "silver": 5,
+  "copper": 0,
+  "gear": [
+    {
+      "instanceId": "lp063qgh",
+      "gearId": "w8",
+      "name": "Longbow",
+      "type": "weapon",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 8,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lp063qgi",
+      "gearId": "s1",
+      "name": "Arrows",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 20,
+      "slots": 1,
+      "cost": 1,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lp063qgj",
+      "gearId": "w9",
+      "name": "Longsword",
+      "type": "weapon",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 9,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lp063qgk",
+      "gearId": "a1",
+      "name": "Leather armor",
+      "type": "armor",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 10,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lp063qgl",
+      "gearId": "s2",
+      "name": "Backpack",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 0,
+      "cost": 2,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lp063qgm",
+      "gearId": "s15",
+      "name": "Rations",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 3,
+      "slots": 1,
+      "cost": 5,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lp06lj5x",
+      "gearId": "s17",
+      "name": "Torch",
+      "type": "sundry",
+      "quantity": 2,
+      "totalUnits": 2,
+      "slots": 2,
+      "cost": 10,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lt1xzpt3",
+      "gearId": "s16",
+      "name": "Rope, 60'",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 1,
+      "currency": "gp"
+    }
+  ],
+  "treasures": [
+    {
+      "cost": 0,
+      "currency": "gp",
+      "id": "lpfzqbac",
+      "name": "3 Pfeile +1",
+      "slots": 0,
+      "desc": ""
+    },
+    {
+      "currency": "gp",
+      "cost": 1,
+      "desc": "+2 to hit / + 2 damage",
+      "id": "lt21w7va",
+      "name": "Antiker Archontischer Pfeil",
+      "slots": 0
+    },
+    {
+      "name": "Ring of Controlling Plants",
+      "id": "lqaxhoqi",
+      "desc": "Grants the power to control plants one per day. Affects: All plants (including plant monsters) in a 10’ square area.  Range: near. Commands: Affected plants may be commanded to move around as the char-acter wishes. Concentration: The effect lasts as long as the wearer of the ring does not take another action.",
+      "currency": "gp",
+      "slots": 0,
+      "cost": 1
+    }
+  ],
+  "magicItems": [],
+  "attacks": [
+    "LONGBOW: +5 (F), 1d8 (2H)",
+    "LONGSWORD: +2, 1d8"
+  ],
+  "ledger": [
+    {
+      "copperChange": 0,
+      "desc": "Buy Dagger",
+      "silverChange": 0,
+      "notes": "",
+      "goldChange": -1
+    },
+    {
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": 0,
+      "desc": "Buy Backpack",
+      "goldChange": -2
+    },
+    {
+      "silverChange": -5,
+      "goldChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Buy Torch"
+    },
+    {
+      "desc": "Buy Torch",
+      "silverChange": -5,
+      "goldChange": 0,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Flint and steel",
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "goldChange": 0
+    },
+    {
+      "goldChange": 0,
+      "copperChange": 0,
+      "silverChange": -3,
+      "notes": "",
+      "desc": "Buy Flask or bottle"
+    },
+    {
+      "goldChange": -1,
+      "notes": "",
+      "desc": "Buy Rope, 60'",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -1,
+      "desc": "Buy Rope, 60'",
+      "notes": ""
+    },
+    {
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": "",
+      "desc": "Buy Mirror",
+      "goldChange": -10
+    },
+    {
+      "notes": "",
+      "goldChange": -8,
+      "silverChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Crossbow"
+    },
+    {
+      "notes": "",
+      "goldChange": -1,
+      "desc": "Buy Crossbow bolts",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Spear",
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -10,
+      "desc": "Buy Leather armor",
+      "notes": ""
+    },
+    {
+      "desc": "Buy Backpack",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -2
+    },
+    {
+      "notes": "",
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "notes": "",
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Flint and steel",
+      "notes": ""
+    },
+    {
+      "goldChange": -8,
+      "notes": "",
+      "desc": "Buy Longbow",
+      "copperChange": 0,
+      "silverChange": 0
+    },
+    {
+      "silverChange": 0,
+      "notes": "",
+      "goldChange": -1,
+      "copperChange": 0,
+      "desc": "Buy Arrows"
+    },
+    {
+      "desc": "Buy Longsword",
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": "",
+      "goldChange": -9
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10,
+      "desc": "Buy Leather armor",
+      "notes": ""
+    },
+    {
+      "goldChange": -2,
+      "notes": "",
+      "silverChange": 0,
+      "desc": "Buy Backpack",
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Torch",
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "desc": "Buy Crowbar",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "goldChange": -1,
+      "silverChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Buy Rope, 60'"
+    },
+    {
+      "notes": "",
+      "desc": "Buy Spear",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "goldChange": -10,
+      "silverChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Leather armor",
+      "notes": ""
+    },
+    {
+      "desc": "Buy Backpack",
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "goldChange": -2
+    },
+    {
+      "silverChange": -5,
+      "notes": "",
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "goldChange": 0
+    },
+    {
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Flint and steel",
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "goldChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Flask or bottle",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -3
+    },
+    {
+      "desc": "Buy Longsword",
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": 0,
+      "goldChange": -9
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10,
+      "desc": "Buy Shield",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Leather armor",
+      "silverChange": 0,
+      "goldChange": -10,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "goldChange": -2,
+      "silverChange": 0,
+      "desc": "Buy Backpack",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -5,
+      "desc": "Buy Lantern"
+    },
+    {
+      "desc": "Buy Oil, flask",
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Oil, flask",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "desc": "Buy Flint and steel",
+      "copperChange": 0,
+      "silverChange": -5
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Rations",
+      "notes": "",
+      "goldChange": 0
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "desc": "Buy Rations",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "notes": "",
+      "desc": "Buy Lantern",
+      "goldChange": -5,
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -5,
+      "desc": "Buy Mace",
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -15,
+      "notes": "",
+      "desc": "Buy Round shield",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -2,
+      "desc": "Buy Backpack",
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "goldChange": -5,
+      "copperChange": 0,
+      "silverChange": 0,
+      "desc": "Buy Lantern"
+    },
+    {
+      "desc": "Buy Oil, flask",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Oil, flask",
+      "goldChange": 0
+    },
+    {
+      "desc": "Buy Flint and steel",
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "goldChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "desc": "Buy Pole",
+      "goldChange": 0
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "goldChange": 0
+    },
+    {
+      "notes": "",
+      "desc": "Buy Dagger",
+      "goldChange": -1,
+      "copperChange": 0,
+      "silverChange": 0
+    },
+    {
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Buy Leather armor",
+      "silverChange": 0,
+      "goldChange": -10
+    },
+    {
+      "desc": "Buy Backpack",
+      "goldChange": -2,
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": "",
+      "goldChange": -5,
+      "desc": "Buy Lantern"
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0,
+      "notes": "",
+      "desc": "Buy Oil, flask"
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Flint and steel",
+      "notes": ""
+    },
+    {
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": -3,
+      "desc": "Buy Flask or bottle",
+      "goldChange": 0
+    },
+    {
+      "goldChange": -1,
+      "desc": "Buy Rope, 60'",
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10,
+      "desc": "Buy Mirror",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "notes": "",
+      "desc": "Buy Crossbow",
+      "copperChange": 0,
+      "goldChange": -8,
+      "silverChange": 0
+    },
+    {
+      "notes": "",
+      "goldChange": -1,
+      "desc": "Buy Crossbow bolts",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -7,
+      "notes": "",
+      "desc": "Buy Shortsword",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10,
+      "desc": "Buy Leather armor",
+      "notes": ""
+    },
+    {
+      "desc": "Buy Backpack",
+      "goldChange": -2,
+      "silverChange": 0,
+      "notes": "",
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "copperChange": 0
+    },
+    {
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "goldChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Rations",
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Longsword",
+      "silverChange": 0,
+      "goldChange": -9,
+      "copperChange": 0
+    },
+    {
+      "desc": "Buy Round shield",
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": "",
+      "goldChange": -15
+    },
+    {
+      "copperChange": -5,
+      "silverChange": 0,
+      "goldChange": 0,
+      "desc": "Buy Club",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -2,
+      "desc": "Buy Backpack"
+    },
+    {
+      "silverChange": -5,
+      "goldChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "desc": "Buy Torch"
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "desc": "Buy Torch"
+    },
+    {
+      "desc": "Buy Flint and steel",
+      "goldChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "desc": "Buy Rations",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -3,
+      "desc": "Buy Flask or bottle",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Shortbow",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -6
+    },
+    {
+      "notes": "",
+      "desc": "Buy Arrows",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -1
+    },
+    {
+      "notes": "",
+      "goldChange": -5,
+      "silverChange": 0,
+      "desc": "Buy Mace",
+      "copperChange": 0
+    },
+    {
+      "desc": "Buy Leather armor",
+      "goldChange": -10,
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": 0
+    },
+    {
+      "desc": "Buy Spear",
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0
+    },
+    {
+      "goldChange": -2,
+      "silverChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Buy Backpack"
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "notes": "",
+      "silverChange": -5,
+      "goldChange": 0,
+      "desc": "Buy Rations",
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Flask or bottle",
+      "silverChange": -3,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Grappling hook",
+      "copperChange": 0,
+      "goldChange": -1,
+      "silverChange": 0
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0,
+      "notes": "",
+      "desc": "Buy Oil, flask"
+    },
+    {
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "goldChange": 0,
+      "desc": "Buy Caltrops (one bag)"
+    },
+    {
+      "goldChange": -1,
+      "silverChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Dagger",
+      "notes": ""
+    },
+    {
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -2,
+      "desc": "Buy Backpack",
+      "notes": ""
+    },
+    {
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "goldChange": 0
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Flint and steel",
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Rations",
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Rations",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Greataxe",
+      "goldChange": -10,
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -8,
+      "desc": "Buy Longbow",
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "silverChange": 0,
+      "notes": "",
+      "desc": "Buy Arrows",
+      "copperChange": 0,
+      "goldChange": -1
+    },
+    {
+      "notes": "",
+      "desc": "Buy Leather armor",
+      "goldChange": -10,
+      "copperChange": 0,
+      "silverChange": 0
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "desc": "Buy Oil, flask",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "goldChange": -9,
+      "desc": "Buy Longsword"
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "goldChange": -10,
+      "desc": "Buy Leather armor"
+    },
+    {
+      "desc": "Buy Shield",
+      "goldChange": -10,
+      "copperChange": 0,
+      "silverChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": -2,
+      "desc": "Buy Backpack",
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "copperChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "desc": "Buy Torch",
+      "copperChange": 0,
+      "silverChange": -5
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Flint and steel",
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0,
+      "goldChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "desc": "Buy Rations",
+      "goldChange": 0
+    },
+    {
+      "desc": "Buy Rations",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -3,
+      "desc": "Buy Flask or bottle",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Greataxe",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -10,
+      "notes": ""
+    },
+    {
+      "goldChange": -2,
+      "notes": "",
+      "desc": "Buy Handaxe",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -10,
+      "desc": "Buy Leather armor",
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": -2,
+      "notes": "",
+      "desc": "Buy Backpack",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "silverChange": -5,
+      "goldChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Torch",
+      "notes": ""
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "desc": "Buy Flint and steel",
+      "goldChange": 0,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Buy Dagger",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -1
+    },
+    {
+      "notes": "",
+      "desc": "Buy Leather armor",
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10
+    },
+    {
+      "goldChange": -2,
+      "notes": "",
+      "silverChange": 0,
+      "desc": "Buy Backpack",
+      "copperChange": 0
+    },
+    {
+      "notes": "",
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Rations"
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Rations",
+      "notes": ""
+    },
+    {
+      "silverChange": -3,
+      "copperChange": 0,
+      "goldChange": 0,
+      "desc": "Buy Flask or bottle",
+      "notes": ""
+    },
+    {
+      "desc": "Buy Caltrops (one bag)",
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "goldChange": 0
+    },
+    {
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": 0,
+      "goldChange": -8,
+      "desc": "Buy Longbow"
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "goldChange": -1,
+      "desc": "Buy Arrows"
+    },
+    {
+      "goldChange": -9,
+      "desc": "Buy Longsword",
+      "notes": "",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "notes": "",
+      "silverChange": 0,
+      "desc": "Buy Leather armor",
+      "goldChange": -10
+    },
+    {
+      "goldChange": -2,
+      "silverChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Buy Backpack"
+    },
+    {
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": "",
+      "desc": "Buy Rations"
+    },
+    {
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5
+    },
+    {
+      "goldChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Torch"
+    },
+    {
+      "copperChange": 0,
+      "silverChange": 0,
+      "desc": "Gained coins",
+      "goldChange": 200,
+      "notes": ""
+    },
+    {
+      "notes": "",
+      "desc": "Gained coins",
+      "goldChange": 300,
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "desc": "Gained coins",
+      "copperChange": 0,
+      "goldChange": 195,
+      "notes": "",
+      "silverChange": 0
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": 680,
+      "desc": "Gained coins",
+      "notes": ""
+    },
+    {
+      "goldChange": -680,
+      "silverChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "desc": "Lost coins"
+    },
+    {
+      "silverChange": 0,
+      "copperChange": 0,
+      "notes": "",
+      "goldChange": -680,
+      "desc": "Lost coins"
+    },
+    {
+      "goldChange": -1,
+      "copperChange": 0,
+      "desc": "Buy Rope, 60'",
+      "silverChange": 0,
+      "notes": ""
+    }
+  ],
+  "spellsKnown": "None",
+  "languages": "Common, Elvish, Sylvan",
+  "creationMethod": "Design",
+  "coreRulesOnly": true,
+  "activeSources": [
+    "CS1",
+    "CS3",
+    "SD",
+    "SG"
+  ],
+  "edits": [
+    {
+      "theField": "Stats",
+      "level": 3,
+      "order": 2,
+      "desc": "Stats set to STR 13, DEX 16, CON 13, INT 12, WIS 10, CHA 10"
+    }
+  ]
+}

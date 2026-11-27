@@ -4,7 +4,8 @@
  */
 import { formatDice } from './dice.ts';
 import { localize, type Dungeon, type ExitType, type LocalizedText, type Rect, type Cell, type Side } from '../dungeon/model.ts';
-import type { SessionState } from './index.ts';
+import { initials } from '../character/model.ts';
+import type { SessionState, TokenColour } from './index.ts';
 
 export type MapMonster = { label: string; name: string; count: string };
 
@@ -22,7 +23,9 @@ export type MapArea = {
 
 export type MapExit = { from: string; to: string; at: Cell; side: Side; type: ExitType };
 
-export type MapView = { dungeonName: string; areas: MapArea[]; exits: MapExit[] };
+export type MapToken = { seat: number; tokenColour: TokenColour; initials: string; area: string; cell: Cell };
+
+export type MapView = { dungeonName: string; areas: MapArea[]; exits: MapExit[]; tokens: MapToken[] };
 
 export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'player'): MapView {
 	const fallback = dungeon.languages[0];
@@ -50,5 +53,20 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		.filter((e) => gm || ((revealed.has(e.from) || revealed.has(e.to)) && e.type !== 'secret'))
 		.map(({ from, to, at, side, type }) => ({ from, to, at, side, type }));
 
-	return { dungeonName: t(dungeon.name)!, areas, exits };
+	const visibleAreas = new Set(areas.map((a) => a.id));
+	const tokens: MapToken[] = state.players.flatMap((p) =>
+		p.character && p.position && visibleAreas.has(p.position.area)
+			? [
+					{
+						seat: p.seat,
+						tokenColour: p.tokenColour,
+						initials: initials(p.character.name),
+						area: p.position.area,
+						cell: p.position.cell
+					}
+				]
+			: []
+	);
+
+	return { dungeonName: t(dungeon.name)!, areas, exits, tokens };
 }

@@ -1,13 +1,18 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CopyLink from '#lib/CopyLink.svelte';
-	import { MAX_PLAYERS } from '#lib/engine/index.ts';
+	import CharacterCard from '#lib/character/CharacterCard.svelte';
+	import { MAX_INVENTORY_LENGTH, MAX_PLAYERS } from '#lib/engine/index.ts';
 	import DungeonMap from '#lib/map/DungeonMap.svelte';
 	import { text } from '#lib/text.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 	const visitor = $derived(data.visitor);
+	const ownSheet = $derived(visitor.role === 'player' ? (data.sheets[0] ?? null) : null);
+	const sheetBySeat = $derived(new Map(data.sheets.map((s) => [s.seat, s])));
+	let importing = $state(false);
+	let savingInventory = $state(false);
 </script>
 
 <svelte:head>
@@ -21,7 +26,7 @@
 		<p class="role"><span class="badge">GM</span> {text.session.youAreGm}</p>
 	{:else if visitor.role === 'player'}
 		<p class="role">
-			<span class="token {visitor.tokenColour}">P{visitor.seat}</span>
+			<span class="token {visitor.tokenColour}">{ownSheet?.initials ?? `P${visitor.seat}`}</span>
 			{text.session.youArePlayer(visitor.seat)} ({text.colours[visitor.tokenColour]})
 		</p>
 	{/if}
@@ -45,6 +50,76 @@
 		<p class="muted">{text.map.unavailable}</p>
 	{/if}
 </section>
+
+{#if visitor.role === 'player'}
+	<section class="card stack" aria-label={text.character.importTitle}>
+		{#if ownSheet}
+			<details open>
+				<summary><span>{ownSheet.character.name}</span><span class="muted small">{text.character.hp} {ownSheet.hp}/{ownSheet.character.maxHp} · {text.character.ac} {ownSheet.character.ac}</span></summary>
+				<CharacterCard sheet={ownSheet} />
+			</details>
+			<form
+				method="POST"
+				action="?/saveInventory"
+				class="stack-sm"
+				use:enhance={() => {
+					savingInventory = true;
+					return async ({ update }) => {
+						await update({ reset: false });
+						savingInventory = false;
+					};
+				}}
+			>
+				<label for="inventory"><strong>{text.character.inventory}</strong></label>
+				<p class="muted small" id="inventory-hint">{text.character.inventoryHint}</p>
+				<textarea
+					id="inventory"
+					name="inventory"
+					rows="5"
+					maxlength={MAX_INVENTORY_LENGTH}
+					aria-describedby="inventory-hint">{ownSheet.inventory}</textarea
+				>
+				{#if form?.inventoryError}
+					<p class="error" role="alert">{form.inventoryError}</p>
+				{/if}
+				<div class="row">
+					<button class="button" disabled={savingInventory}>{text.character.inventorySave}</button>
+					{#if form?.inventorySaved}<span class="muted small" role="status">{text.character.inventorySaved}</span>{/if}
+				</div>
+			</form>
+		{:else}
+			<h2>{text.character.importTitle}</h2>
+			<p class="muted">{text.character.importIntro}</p>
+			<form
+				method="POST"
+				action="?/importCharacter"
+				enctype="multipart/form-data"
+				class="stack-sm"
+				use:enhance={() => {
+					importing = true;
+					return async ({ update }) => {
+						await update();
+						importing = false;
+					};
+				}}
+			>
+				<label for="export">{text.character.fileLabel}</label>
+				<input id="export" name="export" type="file" accept=".json,application/json" required />
+				{#if form?.importErrors}
+					<div role="alert" class="stack-sm">
+						<p class="error">{text.character.importFailed}</p>
+						<ul class="file-errors">
+							{#each form.importErrors as e, i (i)}
+								<li>{e}</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+				<button class="button" disabled={importing}>{text.character.importSubmit}</button>
+			</form>
+		{/if}
+	</section>
+{/if}
 
 {#if visitor.role === 'gm' && data.map.ok}
 	<section class="card stack">
@@ -95,6 +170,18 @@
 							{text.session.player(player.seat)} ({text.colours[player.tokenColour]})
 						</span>
 						<CopyLink link={player.link} label={text.session.player(player.seat)} />
+						{#if sheetBySeat.get(player.seat)}
+							{@const sheet = sheetBySeat.get(player.seat)!}
+							<details>
+								<summary><span>{sheet.character.name}</span><span class="muted small">{text.character.hp} {sheet.hp}/{sheet.character.maxHp} · {text.character.ac} {sheet.character.ac}</span></summary>
+								<CharacterCard {sheet} />
+								{#if sheet.inventory}
+									<p class="small"><strong>{text.character.inventory}:</strong> <span class="pre">{sheet.inventory}</span></p>
+								{/if}
+							</details>
+						{:else}
+							<p class="muted small">{text.character.noCharacter}</p>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -193,6 +280,24 @@
 	}
 	dd {
 		margin: 2px 0 0;
+	}
+	.row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	textarea {
+		width: 100%;
+		font: inherit;
+		box-sizing: border-box;
+		padding: 8px 10px;
+		border: 1.5px solid var(--ink);
+		border-radius: var(--radius);
+		background: var(--surface);
+		color: inherit;
+	}
+	.pre {
+		white-space: pre-wrap;
 	}
 	.mood {
 		border-left: 3px solid var(--ink);

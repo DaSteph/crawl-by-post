@@ -6,12 +6,15 @@ import { randomBytes, randomInt } from 'node:crypto';
 import {
 	applyCommand,
 	resolveVisitor,
+	sheets,
 	type Command,
 	type CommandResult,
 	type Deps,
 	type SessionState,
+	type Sheet,
 	type Visitor
 } from '#lib/engine/index.ts';
+import { importShadowdarklings } from '#lib/character/import.ts';
 import { mapView, type MapView } from '#lib/engine/map.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
@@ -90,6 +93,32 @@ export async function addPlayerSlot(sessionId: string, bySecret: string): Promis
 	return run(sessionId, { type: 'addPlayerSlot', by: bySecret, secret: newToken(24) }, false);
 }
 
+async function currentDungeonId(sessionId: string): Promise<string | null> {
+	const { rows } = await db().query<{ state: SessionState }>('SELECT state FROM sessions WHERE id = $1', [sessionId]);
+	return rows[0]?.state.dungeonId ?? null;
+}
+
+export type ImportOutcome = { ok: true } | { ok: false; errors: string[] };
+
+/** Parses a Shadowdarklings export and imports it for the player holding `bySecret`. */
+export async function importCharacter(sessionId: string, bySecret: string, source: string): Promise<ImportOutcome> {
+	const parsed = importShadowdarklings(source);
+	if (!parsed.ok) return parsed;
+	const dungeonId = await currentDungeonId(sessionId);
+	const loaded = dungeonId ? await loadDungeon(dungeonId) : null;
+	if (!loaded?.ok) return { ok: false, errors: ['The dungeon is unavailable right now. Ask your GM.'] };
+	const result = await run(
+		sessionId,
+		{ type: 'importCharacter', by: bySecret, character: parsed.character, dungeon: loaded.dungeon },
+		false
+	);
+	return result.ok ? { ok: true } : { ok: false, errors: [result.reason] };
+}
+
+export async function editInventory(sessionId: string, bySecret: string, inventory: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'editInventory', by: bySecret, inventory }, false);
+}
+
 /** The map, or why it can't be shown. File errors are for the GM only. */
 export type MapLoad = { ok: true; view: MapView } | { ok: false; errors: string[] | null };
 
@@ -97,6 +126,7 @@ export type SessionView =
 	| {
 			visitor: Exclude<Visitor, { role: 'unknown' }>;
 			players: SessionState['players'] | null;
+			sheets: Sheet[];
 			map: MapLoad;
 	  }
 	| { visitor: { role: 'unknown' } };
@@ -124,6 +154,7 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 	return {
 		visitor,
 		players: visitor.role === 'gm' ? state.players : null,
+		sheets: sheets(state, secret),
 		map: await loadMap(state, visitor.role)
 	};
 }

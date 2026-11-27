@@ -68,6 +68,18 @@
 			{/if}
 		</g>
 	{/each}
+
+	{#each view.tokens as token (token.seat)}
+		<g
+			transform="translate({(token.cell.x + 0.5) * C} {(token.cell.y + 0.5) * C})"
+			class="player-token {token.tokenColour}"
+			role="img"
+			aria-label={text.character.token(token.initials, token.seat)}
+		>
+			<circle r={C * 0.42} />
+			<text text-anchor="middle" dominant-baseline="central">{token.initials}</text>
+		</g>
+	{/each}
 </svg>
 
 <style>
@@ -112,6 +124,27 @@
 		fill: var(--ink);
 		font-size: 11px;
 		font-weight: 700;
+	}
+	.player-token circle {
+		stroke: var(--ink);
+		stroke-width: 1.5;
+	}
+	.player-token text {
+		fill: var(--token-text);
+		font-size: 9.5px;
+		font-weight: 700;
+	}
+	.player-token.blue circle {
+		fill: var(--token-blue);
+	}
+	.player-token.purple circle {
+		fill: var(--token-purple);
+	}
+	.player-token.green circle {
+		fill: var(--token-green);
+	}
+	.player-token.magenta circle {
+		fill: var(--token-magenta);
 	}
 	.door.hidden rect {
 		stroke: var(--ink-2);

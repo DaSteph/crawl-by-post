@@ -1,0 +1,366 @@
+{
+  "name": "Magalph (Brandonsford)",
+  "stats": {
+    "STR": 13,
+    "DEX": 9,
+    "CON": 8,
+    "INT": 15,
+    "WIS": 9,
+    "CHA": 19
+  },
+  "rolledStats": {
+    "STR": 13,
+    "DEX": 9,
+    "CON": 8,
+    "INT": 15,
+    "WIS": 9,
+    "CHA": 17
+  },
+  "ancestry": "Human",
+  "class": "Witch",
+  "level": 2,
+  "levels": [
+    {
+      "talentRolledDesc": "+2 to Charisma stat or +1 to witch spellcasting checks",
+      "HitPointRoll": 2,
+      "Rolled12TalentOrTwoStatPoints": "",
+      "Rolled12ChosenTalentDesc": "",
+      "level": 1,
+      "talentRolledName": "Plus2CHAOrPlus1Casting",
+      "stoutHitPointRoll": 0,
+      "Rolled12ChosenTalentName": ""
+    },
+    {
+      "stoutHitPointRoll": 0,
+      "HitPointRoll": 3,
+      "talentRolledName": "",
+      "level": 2,
+      "Rolled12ChosenTalentName": "",
+      "talentRolledDesc": "",
+      "Rolled12TalentOrTwoStatPoints": "",
+      "Rolled12ChosenTalentDesc": ""
+    }
+  ],
+  "XP": 13,
+  "ambitionTalentLevel": {
+    "talentRolledDesc": "+2 to Charisma stat or +1 to witch spellcasting checks",
+    "level": 1,
+    "Rolled12ChosenTalentDesc": "",
+    "HitPointRoll": 0,
+    "stoutHitPointRoll": 0,
+    "Rolled12TalentOrTwoStatPoints": "",
+    "talentRolledName": "Plus2CHAOrPlus1Casting",
+    "Rolled12ChosenTalentName": ""
+  },
+  "title": "Fortune Teller",
+  "alignment": "Lawful",
+  "background": "Soldier",
+  "deity": "Saint Terragnis",
+  "maxHitPoints": 4,
+  "armorClass": 10,
+  "gearSlotsTotal": 13,
+  "gearSlotsUsed": 12,
+  "bonuses": [
+    {
+      "name": "ExtraLanguage: Human undefined",
+      "sourceCategory": "Ability",
+      "gainedAtLevel": 1,
+      "bonusName": "Reptilian",
+      "sourceType": "Ancestry",
+      "sourceName": "Human",
+      "bonusTo": "Languages"
+    },
+    {
+      "gainedAtLevel": 1,
+      "bonusTo": "Witch",
+      "bonusName": "Plus1ToCastingSpells",
+      "name": "Plus2CHAOrPlus1Casting",
+      "sourceName": "Human Ambition",
+      "sourceType": "Ancestry",
+      "sourceCategory": "Talent"
+    },
+    {
+      "gainedAtLevel": 1,
+      "sourceType": "Class",
+      "sourceName": "Witch",
+      "name": "Spell: Witch, Tier 1, Spell 1",
+      "bonusTo": "Tier:1, Spell:1",
+      "bonusName": "Hypnotize",
+      "sourceCategory": "Ability"
+    },
+    {
+      "gainedAtLevel": 1,
+      "sourceName": "Witch",
+      "sourceType": "Class",
+      "sourceCategory": "Ability",
+      "bonusName": "Shadowdance",
+      "bonusTo": "Tier:1, Spell:2",
+      "name": "Spell: Witch, Tier 1, Spell 2"
+    },
+    {
+      "sourceType": "Class",
+      "sourceName": "Witch",
+      "sourceCategory": "Ability",
+      "name": "Spell: Witch, Tier 1, Spell 3",
+      "bonusTo": "Tier:1, Spell:3",
+      "gainedAtLevel": 1,
+      "bonusName": "Charm Person"
+    },
+    {
+      "sourceType": "Class",
+      "sourceName": "Witch",
+      "name": "Plus2CHAOrPlus1Casting",
+      "gainedAtLevel": 1,
+      "bonusName": "StatBonus",
+      "sourceCategory": "Talent",
+      "bonusTo": "CHA:+2"
+    },
+    {
+      "sourceName": "Witch",
+      "sourceType": "Class",
+      "bonusTo": "Tier:1, Spell:4",
+      "bonusName": "Eyebite",
+      "gainedAtLevel": 2,
+      "sourceCategory": "Ability",
+      "name": "Spell: Witch, Tier 1, Spell 4"
+    }
+  ],
+  "goldRolled": 45,
+  "gold": 75,
+  "silver": 3,
+  "copper": 9,
+  "gear": [
+    {
+      "instanceId": "lt8xbq47",
+      "gearId": "w4",
+      "name": "Dagger",
+      "type": "weapon",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 1,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lt8xbq48",
+      "gearId": "a1",
+      "name": "Leather armor",
+      "type": "armor",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 10,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lt8xbq49",
+      "gearId": "s2",
+      "name": "Backpack",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 0,
+      "cost": 2,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lt8xbq4a",
+      "gearId": "s17",
+      "name": "Torch",
+      "type": "sundry",
+      "quantity": 4,
+      "totalUnits": 4,
+      "slots": 4,
+      "cost": 20,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lt8xbq4d",
+      "gearId": "s8",
+      "name": "Flint and steel",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 5,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lt8xbq4e",
+      "gearId": "s15",
+      "name": "Rations",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 3,
+      "slots": 1,
+      "cost": 5,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lt8xbq4f",
+      "gearId": "s7",
+      "name": "Flask or bottle",
+      "type": "sundry",
+      "quantity": 2,
+      "totalUnits": 2,
+      "slots": 2,
+      "cost": 6,
+      "currency": "sp"
+    },
+    {
+      "instanceId": "lt8xbq4i",
+      "gearId": "s9",
+      "name": "Grappling hook",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 1,
+      "currency": "gp"
+    },
+    {
+      "instanceId": "lt8xkdf6",
+      "gearId": "s16",
+      "name": "Rope, 60'",
+      "type": "sundry",
+      "quantity": 1,
+      "totalUnits": 1,
+      "slots": 1,
+      "cost": 1,
+      "currency": "gp"
+    }
+  ],
+  "treasures": [
+    {
+      "cost": null,
+      "id": "lt92xydi",
+      "slots": 0,
+      "name": "2 Wolfsaugen (Silberglanz)",
+      "desc": "",
+      "currency": "gp"
+    }
+  ],
+  "magicItems": [],
+  "attacks": [
+    "DAGGER: +1 (N), 1d4 (FIN)",
+    "SPELLS: To cast a Witch spell, roll 1d20+5 vs a DC equal to 10 + the spell's tier."
+  ],
+  "ledger": [
+    {
+      "goldChange": -1,
+      "silverChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Dagger",
+      "notes": ""
+    },
+    {
+      "desc": "Buy Leather armor",
+      "silverChange": 0,
+      "copperChange": 0,
+      "goldChange": -10,
+      "notes": ""
+    },
+    {
+      "goldChange": -2,
+      "silverChange": 0,
+      "desc": "Buy Backpack",
+      "notes": "",
+      "copperChange": 0
+    },
+    {
+      "goldChange": 0,
+      "notes": "",
+      "silverChange": -5,
+      "copperChange": 0,
+      "desc": "Buy Torch"
+    },
+    {
+      "desc": "Buy Torch",
+      "goldChange": 0,
+      "silverChange": -5,
+      "copperChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "notes": "",
+      "desc": "Buy Torch",
+      "silverChange": -5,
+      "copperChange": 0
+    },
+    {
+      "copperChange": 0,
+      "silverChange": -5,
+      "notes": "",
+      "desc": "Buy Flint and steel",
+      "goldChange": 0
+    },
+    {
+      "desc": "Buy Rations",
+      "goldChange": 0,
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5
+    },
+    {
+      "copperChange": 0,
+      "goldChange": 0,
+      "silverChange": -3,
+      "desc": "Buy Flask or bottle",
+      "notes": ""
+    },
+    {
+      "goldChange": 0,
+      "desc": "Buy Torch",
+      "notes": "",
+      "copperChange": 0,
+      "silverChange": -5
+    },
+    {
+      "goldChange": 0,
+      "copperChange": 0,
+      "desc": "Buy Flask or bottle",
+      "silverChange": -3,
+      "notes": ""
+    },
+    {
+      "desc": "Buy Grappling hook",
+      "copperChange": 0,
+      "goldChange": -1,
+      "silverChange": 0,
+      "notes": ""
+    },
+    {
+      "goldChange": -1,
+      "notes": "",
+      "desc": "Buy Rope, 60'",
+      "silverChange": 0,
+      "copperChange": 0
+    },
+    {
+      "goldChange": -1,
+      "silverChange": 0,
+      "desc": "Lost coins",
+      "copperChange": 0,
+      "notes": "Tavern"
+    },
+    {
+      "notes": "Kill Dragon in Brandonford",
+      "goldChange": 50,
+      "copperChange": 0,
+      "silverChange": 0,
+      "desc": "Gained coins"
+    }
+  ],
+  "spellsKnown": "Charm Person, Eyebite, Hypnotize, Shadowdance",
+  "languages": "Common, Diabolic, Primordial, Reptilian, Sylvan",
+  "creationMethod": "Design",
+  "coreRulesOnly": true,
+  "activeSources": [
+    "CS1",
+    "CS2",
+    "CS3",
+    "SD"
+  ],
+  "edits": []
+}

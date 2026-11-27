@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-- `npm test` runs the tests (Vitest): game engine, dungeon file parser, map geometry.
+- `npm test` runs the tests (Vitest): game engine, dungeon file parser, map geometry, Shadowdarklings importer.
 - `npm run check` type-checks the project.
 
 The database schema is created automatically on server start.

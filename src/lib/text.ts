@@ -54,6 +54,39 @@ export const text = {
 		monsters: 'Monsters'
 	},
 
+	character: {
+		importTitle: 'Your character',
+		importIntro:
+			'Export your character from Shadowdarklings (the JSON download) and upload the file here. Your token appears in the start room.',
+		fileLabel: 'Shadowdarklings JSON export',
+		importSubmit: 'Import character',
+		importFailed: 'The character could not be imported:',
+		noFile: 'Choose your Shadowdarklings .json file first.',
+		tooLarge: 'That file is too large to be a Shadowdarklings export.',
+		summary: (ancestry: string, className: string, level: number) =>
+			[ancestry, className, `level ${level}`].filter(Boolean).join(' · '),
+		hp: 'HP',
+		ac: 'AC',
+		abilities: 'Abilities',
+		weapons: 'Weapons',
+		weaponLine: (bonus: string, range: string | null, damage: string, props: string[]) =>
+			[`${bonus} to hit`, range, `${damage} damage`, ...props].filter(Boolean).join(' · '),
+		ranges: { close: 'close', near: 'near', far: 'far' },
+		spells: 'Spells',
+		spellcasting: (bonus: string) => `Spellcasting check: d20 ${bonus}`,
+		gear: 'Gear',
+		treasures: 'Treasure',
+		languages: 'Languages',
+		readOnly: 'From your Shadowdarklings export, read-only.',
+		inventory: 'Inventory',
+		inventoryHint: 'Free text: loot, used-up items, notes. Only you can edit it.',
+		inventorySave: 'Save inventory',
+		inventorySaved: 'Saved',
+		characters: 'Characters',
+		noCharacter: 'No character imported yet.',
+		token: (initials: string, seat: number) => `${initials}, player ${seat}`
+	},
+
 	colours: {
 		blue: 'blue',
 		purple: 'purple',
