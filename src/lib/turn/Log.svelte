@@ -1,24 +1,28 @@
 <script lang="ts">
-	import { groupLog, LONG_POST, type LogRecord, type Person } from '#lib/engine/log.ts';
+	import { LONG_POST, type LogBlock, type LogRecord, type Person } from '#lib/engine/log.ts';
 	import { text } from '#lib/text.ts';
 	import { describeCheck } from './describe.ts';
 
 	let {
-		log,
+		blocks,
 		people,
-		areaName
+		areaName,
+		title = text.log.title,
+		empty = text.log.empty
 	}: {
-		log: LogRecord[];
+		/** The log as it reads: `groupLog` for the whole log, `turnSummary` for a summary. */
+		blocks: LogBlock[];
 		people: Person[];
 		/** The name of an area as the viewer may know it. */
 		areaName: (id: string) => string;
+		title?: string;
+		empty?: string;
 	} = $props();
 
 	/** Blocks shown before "show earlier" is needed; the newest are at the bottom. */
 	const WINDOW = 60;
 
 	const bySeat = $derived(new Map(people.map((p) => [p.seat, p])));
-	const blocks = $derived(groupLog(log));
 	let showAll = $state(false);
 	const visible = $derived(showAll ? blocks : blocks.slice(-WINDOW));
 	const hidden = $derived(blocks.length - visible.length);
@@ -208,10 +212,10 @@
 	{/if}
 {/snippet}
 
-<section class="log" aria-label={text.log.title}>
-	<h2>{text.log.title}</h2>
+<section class="log" aria-label={title}>
+	<h2>{title}</h2>
 	{#if blocks.length === 0}
-		<p class="muted small">{text.log.empty}</p>
+		<p class="muted small">{empty}</p>
 	{:else}
 		{#if hidden > 0}
 			<button type="button" class="collapsed" onclick={() => (showAll = true)}>{text.log.earlier(hidden)}</button>

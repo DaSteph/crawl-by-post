@@ -12,6 +12,7 @@
 	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
 	import Compose from '#lib/turn/Compose.svelte';
 	import Log from '#lib/turn/Log.svelte';
+	import { groupLog, lastTurnEnd, turnSummary } from '#lib/engine/log.ts';
 	import ChallengeForm from '#lib/turn/ChallengeForm.svelte';
 	import ChallengePrompt from '#lib/turn/ChallengePrompt.svelte';
 	import TimeoutPrompt from '#lib/turn/TimeoutPrompt.svelte';
@@ -119,6 +120,11 @@
 	/** GM: the wandering monster check waiting for a decision. */
 	const wanderingCheck = $derived(visitor.role === 'gm' ? (crawl?.wanderingCheck ?? null) : null);
 	let placingWandering = $state(false);
+	const logBlocks = $derived(groupLog(data.log));
+	/** Everything since the visitor's last turn, shown while the spotlight is theirs (challenge and damage turns too). */
+	const summary = $derived(holder !== null && holder === me ? turnSummary(data.log, lastTurnEnd(data.log, me)) : null);
+	let summaryCard: HTMLElement | undefined = $state();
+	let map: ReturnType<typeof DungeonMap> | undefined = $state();
 	const nameOf = (seat: number) => data.people.find((p) => p.seat === seat)?.name ?? text.session.player(seat);
 	const turnLine = $derived.by(() => {
 		if (holder === null) return null;
@@ -145,8 +151,15 @@
 		const refresh = () => {
 			if (document.visibilityState === 'visible') invalidateAll();
 		};
-		const onPush = (e: MessageEvent) => {
+		const onPush = async (e: MessageEvent) => {
 			if (e.data?.type === 'push') invalidateAll();
+			// A notification for this page was tapped while it was open: show it as a fresh load would.
+			if (e.data?.type === 'opened') {
+				await invalidateAll();
+				await tick();
+				map?.centre();
+				(summaryCard ?? document.body).scrollIntoView({ block: 'start' });
+			}
 		};
 		document.addEventListener('visibilitychange', refresh);
 		navigator.serviceWorker?.addEventListener('message', onPush);
@@ -192,6 +205,12 @@
 		{#if visitor.role === 'player'}<span class="muted small">{text.crawl.notStartedPlayer}</span>{/if}
 	{/if}
 </section>
+
+{#if summary && me !== null}
+	<section class="card" bind:this={summaryCard}>
+		<Log blocks={summary} people={data.people} {areaName} title={text.log.summaryTitle} empty={text.log.summaryEmpty} />
+	</section>
+{/if}
 
 {#snippet revealForm(area: MapArea)}
 	<form
@@ -279,6 +298,7 @@
 		<h2>{data.map.view.dungeonName}</h2>
 		{#if visitor.role === 'gm'}
 			<DungeonMap
+				bind:this={map}
 				view={data.map.view}
 				focus={focusCell}
 				busy={moving}
@@ -295,6 +315,7 @@
 			{/if}
 		{:else}
 			<DungeonMap
+				bind:this={map}
 				view={data.map.view}
 				focus={focusCell}
 				busy={moving}
@@ -401,7 +422,7 @@
 
 {#if me !== null}
 	<section class="card stack">
-		<Log log={data.log} people={data.people} {areaName} />
+		<Log blocks={logBlocks} people={data.people} {areaName} />
 		{#if visitor.role === 'gm' && data.hpChanges.length}
 			<HpChanges
 				changes={data.hpChanges}

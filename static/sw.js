@@ -36,7 +36,10 @@ self.addEventListener('notificationclick', (event) => {
 		(async () => {
 			const pages = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
 			const same = pages.find((page) => page.url.split('#')[0] === url);
-			return same ? same.focus() : self.clients.openWindow(url);
+			if (!same) return self.clients.openWindow(url);
+			// An open page reloads its data, re-centres the map and shows the summary, as a fresh one would.
+			same.postMessage({ type: 'opened', url });
+			return same.focus();
 		})()
 	);
 });

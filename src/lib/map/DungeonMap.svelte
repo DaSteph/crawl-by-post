@@ -66,11 +66,13 @@
 	}
 
 	let scroller: HTMLDivElement | undefined = $state();
-	onMount(() => {
+	/** Scrolls the map so `focus` sits in the middle. Done on load, and again when a notification is tapped. */
+	export function centre() {
 		if (!focus || !scroller) return;
 		scroller.scrollLeft = (focus.x - b.x + 0.5) * PX - scroller.clientWidth / 2;
 		scroller.scrollTop = (focus.y - b.y + 0.5) * PX - scroller.clientHeight / 2;
-	});
+	}
+	onMount(centre);
 
 	/** Offsets along the wall for a door symbol centred on (0, 0). */
 	function along(door: Door, offset: number) {
