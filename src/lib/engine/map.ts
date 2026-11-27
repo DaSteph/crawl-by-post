@@ -8,8 +8,21 @@ import { initials } from '../character/model.ts';
 import type { SessionState, TokenColour } from './index.ts';
 import { spotlightHolder } from './turns.ts';
 import { doorways, movesFor, type Moves } from './movement.ts';
+import { conditionOf, isDying, type Condition } from './monsters.ts';
+import type { AttackOption } from '../dungeon/model.ts';
 
-export type MapMonster = { label: string; name: string; count: string };
+/** A monster listed for an area in the dungeon file. `index` is what the GM places it by. */
+export type MapMonster = { index: number; label: string; name: string; count: string };
+
+/** A monster token on the map. Players get its condition only; HP, AC and attacks are for the GM. */
+export type MapMonsterToken = {
+	id: string;
+	name: string;
+	area: string;
+	cell: Cell;
+	condition: Condition;
+	gm: { hp: number; maxHp: number; ac: number; attacks: AttackOption[] } | null;
+};
 
 export type MapArea = {
 	id: string;
@@ -33,6 +46,8 @@ export type MapToken = {
 	cell: Cell;
 	/** True for the player holding the spotlight. */
 	spotlight: boolean;
+	/** True at 0 HP. */
+	dying: boolean;
 };
 
 /**
@@ -46,6 +61,7 @@ export type MapView = {
 	areas: MapArea[];
 	exits: MapExit[];
 	tokens: MapToken[];
+	monsters: MapMonsterToken[];
 	unknown: MapUnknown[];
 	/** Where the viewer can move their token now; null unless they hold the spotlight. */
 	moves: Moves | null;
@@ -70,7 +86,7 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 			mood: gm ? t(a.mood) : null,
 			notes: gm ? t(a.notes) : null,
 			monsters: gm
-				? a.monsters.map((m) => ({ label: m.label, name: t(m.name)!, count: formatDice(m.count) }))
+				? a.monsters.map((m, index) => ({ index, label: m.label, name: t(m.name)!, count: formatDice(m.count) }))
 				: []
 		}));
 
@@ -89,11 +105,24 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 						initials: initials(p.character.name),
 						area: p.position.area,
 						cell: p.position.cell,
-						spotlight: holder === p.seat
+						spotlight: holder === p.seat,
+						dying: isDying(p)
 					}
 				]
 			: []
 	);
+
+	// Players see monsters in revealed areas only; the GM sees every one.
+	const monsters: MapMonsterToken[] = (state.monsters ?? [])
+		.filter((m) => gm || revealed.has(m.position.area))
+		.map((m) => ({
+			id: m.id,
+			name: m.name,
+			area: m.position.area,
+			cell: m.position.cell,
+			condition: conditionOf(m.hp, m.maxHp),
+			gm: gm ? { hp: m.hp, maxHp: m.maxHp, ac: m.ac, attacks: m.attacks } : null
+		}));
 
 	const unknown: MapUnknown[] = doorways(state, dungeon).map((d) => ({
 		at: d.beyond,
@@ -102,7 +131,7 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 	}));
 	const moves = !gm && seat !== undefined ? movesFor(state, dungeon, seat) : null;
 
-	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, unknown, moves };
+	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, moves };
 }
 
 /** Players see exits of revealed areas; a secret one only once both its sides are revealed (found). */

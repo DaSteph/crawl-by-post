@@ -123,10 +123,43 @@
 		<li class="entry">
 			<span class="who gm" aria-hidden="true">dmg</span>
 			<div class="roll">
-				<strong>{text.log.damage(nameOf(e.seat), e.weapon)}</strong>
+				<strong
+					>{e.target
+						? text.log.damageTarget(nameOf(e.seat), e.weapon, `${e.target.id} ${e.target.name}`)
+						: text.log.damage(nameOf(e.seat), e.weapon)}</strong
+				>
 				<p class="num">{text.log.damageLine(e.formula, e.rolls, e.total)}</p>
 			</div>
 		</li>
+	{:else if e.kind === 'monsterAttack'}
+		<li class="entry">
+			<span class="who monster" aria-hidden="true">{e.monster.id}</span>
+			<div class="roll">
+				<strong>{text.log.monsterAttack(`${e.monster.id} ${e.monster.name}`, nameOf(e.seat))}</strong>
+				<ul class="strikes">
+					{#each e.strikes as s, i (i)}
+						<li>
+							<span>{text.log.strike(s.attack)}</span>
+							<span class="num">
+								{text.log.d20s(s.d20s, s.d20)}{#if e.edge} ({text.challenge.edgeNote[e.edge]}){/if}
+								{text.log.modifier(s.bonus)} {text.log.vsAc(s.total, e.ac)}
+								· <strong>{s.hit ? `✓ ${text.log.hit}` : `✗ ${text.log.miss}`}</strong>
+							</span>
+							{#if s.damage}
+								<span class="num">{text.log.damageLine(s.damage.formula, s.damage.rolls, s.damage.total)}</span>
+							{/if}
+							{#if s.effect}<span>{s.effect}</span>{/if}
+						</li>
+					{/each}
+				</ul>
+			</div>
+		</li>
+	{:else if e.kind === 'monsterHurt'}
+		<li class="event hurt">{text.log.monsterHurt(`${e.monster.id} ${e.monster.name}`, text.monsters.conditions[e.condition])}</li>
+	{:else if e.kind === 'characterHurt'}
+		<li class="event hurt">{text.log.characterHurt(nameOf(e.seat), e.amount)}</li>
+	{:else if e.kind === 'dying'}
+		<li class="event dying">{text.log.dying(nameOf(e.seat))}</li>
 	{:else if e.kind === 'declined'}
 		<li class="event">{text.log.declined(nameOf(e.seat))}</li>
 	{:else if e.kind === 'crawlStarted'}
@@ -269,6 +302,34 @@
 		border-left: 3px solid var(--ink);
 		padding-left: 10px;
 		font-style: italic;
+	}
+	.who.monster {
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		background: var(--monster);
+		color: var(--monster-text);
+		box-shadow: 0 0 0 var(--monster-outline-width) var(--monster-outline);
+		font-weight: 700;
+		font-size: 0.6rem;
+	}
+	.strikes li {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		gap: 2px 10px;
+	}
+	.strikes li + li {
+		border-top: 1px dashed var(--ink-2);
+		padding-top: 2px;
+	}
+	.event.hurt,
+	.event.dying {
+		font-style: normal;
+		color: var(--ink);
+	}
+	.event.dying {
+		font-weight: 700;
 	}
 	.event.revealed {
 		font-style: normal;

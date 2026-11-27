@@ -1,19 +1,24 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 	import { ABILITIES } from '#lib/character/model.ts';
 	import { DC_PICKS, DEFAULT_DC, MAX_DC, MAX_STAKES_LENGTH, MIN_DC } from '#lib/engine/challenges.ts';
 	import { formatDice } from '#lib/engine/dice.ts';
 	import type { Sheet } from '#lib/engine/index.ts';
+	import type { MapMonsterToken } from '#lib/engine/map.ts';
 	import { text } from '#lib/text.ts';
 
 	let {
 		sheet,
 		preConsent,
+		monsters,
 		error
 	}: {
 		/** The character who just acted and gets the challenge. */
 		sheet: Sheet;
 		preConsent: boolean;
+		/** Monsters on the map an attack can target (the GM's view). */
+		monsters: MapMonsterToken[];
 		error: string | null;
 	} = $props();
 
@@ -23,6 +28,10 @@
 	let type = $state<'test' | 'attack'>('test');
 	let busy = $state(false);
 	const weapons = $derived(sheet.character.weapons);
+	/** The monster attacked, or '' for something without a placed token. */
+	// Preset once when the form opens: the first monster still standing.
+	let target = $state(untrack(() => monsters.find((m) => m.condition !== 'down')?.id ?? ''));
+	const targetMonster = $derived(type === 'attack' ? monsters.find((m) => m.id === target) : undefined);
 </script>
 
 <form
@@ -71,6 +80,23 @@
 		<p class="small">{t.noWeapons}</p>
 	{/if}
 
+	{#if type === 'attack' && monsters.length}
+		<fieldset class="pills">
+			<legend>{t.targetLabel}</legend>
+			{#each monsters as m (m.id)}
+				<label>
+					<input type="radio" name="target" value={m.id} bind:group={target} />
+					<span>{m.id} {m.name} <span class="mod">{text.monsters.ac} {m.gm?.ac} · {text.monsters.conditions[m.condition]}</span></span>
+				</label>
+			{/each}
+			<label><input type="radio" name="target" value="" bind:group={target} /><span>{t.otherTarget}</span></label>
+		</fieldset>
+	{/if}
+
+	{#if targetMonster?.gm}
+		<p class="small"><strong>{t.dcFromAc(targetMonster.gm.ac)}</strong></p>
+	{/if}
+	{#if !targetMonster}
 	<fieldset class="pills">
 		<legend>{t.dcLabel}</legend>
 		{#each DC_PICKS as dc (dc)}
@@ -82,6 +108,7 @@
 		</label>
 		{#if type === 'attack'}<p class="muted small full">{t.dcHintAttack}</p>{/if}
 	</fieldset>
+	{/if}
 
 	<fieldset class="pills">
 		<legend>{t.edgeLabel}</legend>

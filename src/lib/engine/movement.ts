@@ -10,6 +10,7 @@
 import { cellsOf, inRect, neighbour, type Cell, type Dungeon, type Exit } from '../dungeon/model.ts';
 import type { CommandResult, Deps, Position, SessionState } from './index.ts';
 import type { LogEntry } from './turns.ts';
+import { occupiedCells } from './monsters.ts';
 
 export type MoveToken = { type: 'moveToken'; by: string; to: Cell; dungeon: Dungeon };
 export type SetAreaRevealed = {
@@ -123,12 +124,8 @@ export function movesFor(state: SessionState, dungeon: Dungeon, seat: number): M
 	};
 }
 
-/** Squares other tokens stand on. */
-function occupied(state: SessionState, exceptSeat: number): Set<string> {
-	return new Set(
-		state.players.flatMap((p) => (p.seat !== exceptSeat && p.character && p.position ? [key(p.position.cell)] : []))
-	);
-}
+/** Squares other tokens and monsters stand on. */
+const occupied = (state: SessionState, exceptSeat: number) => occupiedCells(state, { seat: exceptSeat });
 
 export function moveToken(state: SessionState, command: MoveToken, deps: Deps): CommandResult {
 	const player = state.players.find((p) => p.secret === command.by);
@@ -150,7 +147,7 @@ export function moveToken(state: SessionState, command: MoveToken, deps: Deps): 
 	}
 	if (same(target.cell, player.position.cell)) return { ok: false, reason: 'You’re already there.' };
 	if (occupied(state, player.seat).has(key(target.cell))) {
-		return { ok: false, reason: 'Someone is already standing there.' };
+		return { ok: false, reason: 'Something is already standing there.' };
 	}
 
 	return {

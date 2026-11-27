@@ -10,6 +10,7 @@ import { ABILITIES, type Ability } from '../character/model.ts';
 import { formatDice, rollDice, type DiceFormula } from './dice.ts';
 import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts';
 import type { LogEntry, Spotlight } from './turns.ts';
+import { suggestHp, type MonsterRef } from './monsters.ts';
 
 /** The DC quick picks in the challenge form, and the one preset. */
 export const DC_PICKS = [9, 12, 15, 18] as const;
@@ -23,12 +24,16 @@ export type Edge = 'advantage' | 'disadvantage' | null;
 /** The weapon as it stood when the challenge was set, so a later re-import can't change the roll. */
 export type WeaponRef = { name: string; attackBonus: number; damage: DiceFormula };
 
-export type Check = { type: 'test'; ability: Ability } | { type: 'attack'; weapon: WeaponRef };
+/** `target` is the monster attacked, whose AC is the DC. Absent when the GM set the DC by hand. */
+export type Check = { type: 'test'; ability: Ability } | { type: 'attack'; weapon: WeaponRef; target?: MonsterRef };
 
 export type Challenge = { seat: number; check: Check; dc: number; edge: Edge; stakes: string };
 
-/** What the GM picks in the form. `weapon` is an index into the character's weapons. */
-export type CheckChoice = { type: 'test'; ability: Ability } | { type: 'attack'; weapon: number };
+/**
+ * What the GM picks in the form. `weapon` is an index into the character's weapons;
+ * `target` is the id of a monster on the map, whose AC replaces the DC.
+ */
+export type CheckChoice = { type: 'test'; ability: Ability } | { type: 'attack'; weapon: number; target?: string };
 
 export type SetChallenge = {
 	type: 'setChallenge';
@@ -67,6 +72,8 @@ export type DamageEntry = {
 	rolls: number[];
 	modifier: number;
 	total: number;
+	/** The monster hit. Its HP change waits for the GM. */
+	target?: MonsterRef;
 };
 
 const logged = (entry: LogEntry): EngineEvent => ({ type: 'logged', entry });
@@ -85,9 +92,30 @@ function roll(state: SessionState, challenge: Challenge, deps: Deps, at: string)
 	};
 }
 
-function damage(seat: number, weapon: WeaponRef, deps: Deps, at: string): LogEntry {
+/** Rolls a hit's damage. Against a monster still on the map, it also suggests the HP change for the GM to confirm. */
+function damage(
+	state: SessionState,
+	seat: number,
+	weapon: WeaponRef,
+	target: MonsterRef | undefined,
+	deps: Deps,
+	at: string
+): { state: SessionState; events: EngineEvent[] } {
 	const { rolls, modifier, total } = rollDice(weapon.damage, deps.dice);
-	return { at, kind: 'damage', seat, weapon: weapon.name, formula: formatDice(weapon.damage), rolls, modifier, total };
+	const entry: LogEntry = {
+		at,
+		kind: 'damage',
+		seat,
+		weapon: weapon.name,
+		formula: formatDice(weapon.damage),
+		rolls,
+		modifier,
+		total,
+		...(target ? { target } : {})
+	};
+	const onMap = target && state.monsters?.some((m) => m.id === target.id);
+	const suggested = onMap ? suggestHp(state, { kind: 'monster', id: target.id }, total) : { state, events: [] };
+	return { state: suggested.state, events: [logged(entry), ...suggested.events] };
 }
 
 function withSpotlight(state: SessionState, spotlight: Spotlight): SessionState {
@@ -102,7 +130,13 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 	const character = state.players.find((p) => p.seat === seat)?.character;
 	if (!character) return { ok: false, reason: 'That player has no character.' };
 
-	const { dc, edge } = command;
+	const { edge } = command;
+	let { dc } = command;
+	const targetId = command.check.type === 'attack' ? command.check.target : undefined;
+	const target = targetId ? state.monsters?.find((m) => m.id === targetId) : undefined;
+	if (targetId && !target) return { ok: false, reason: 'That monster isn’t on the map any more.' };
+	// An attack on a monster uses its AC; nobody has to look it up.
+	if (target) dc = target.ac;
 	if (!Number.isInteger(dc) || dc < MIN_DC || dc > MAX_DC) {
 		return { ok: false, reason: `The DC must be a whole number from ${MIN_DC} to ${MAX_DC}.` };
 	}
@@ -121,7 +155,11 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 	} else {
 		const weapon = character.weapons[command.check.weapon];
 		if (!weapon) return { ok: false, reason: 'Pick one of the character’s weapons.' };
-		check = { type: 'attack', weapon: { name: weapon.name, attackBonus: weapon.attackBonus, damage: weapon.damage } };
+		check = {
+			type: 'attack',
+			weapon: { name: weapon.name, attackBonus: weapon.attackBonus, damage: weapon.damage },
+			...(target ? { target: { id: target.id, name: target.name } } : {})
+		};
 	}
 
 	const challenge: Challenge = { seat, check, dc, edge, stakes };
@@ -137,8 +175,13 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 	// Pre-consent covers this one challenge: roll now (and the damage on a hit), and the GM's turn goes on.
 	const result = roll(state, challenge, deps, at);
 	events.push(logged(result.entry));
-	if (result.hit && check.type === 'attack') events.push(logged(damage(seat, check.weapon, deps, at)));
-	return { ok: true, state: withSpotlight(state, { kind: 'gm', afterSeat: seat }), events };
+	let next = state;
+	if (result.hit && check.type === 'attack') {
+		const rolled = damage(state, seat, check.weapon, check.target, deps, at);
+		next = rolled.state;
+		events.push(...rolled.events);
+	}
+	return { ok: true, state: withSpotlight(next, { kind: 'gm', afterSeat: seat }), events };
 }
 
 function challengedPlayer(state: SessionState, by: string) {
@@ -160,7 +203,12 @@ export function acceptChallenge(state: SessionState, command: AcceptChallenge, d
 	// A hit keeps the spotlight with the player for the damage roll; anything else goes to the GM.
 	const next: Spotlight =
 		result.hit && challenge.check.type === 'attack'
-			? { kind: 'damage', seat: challenge.seat, weapon: challenge.check.weapon }
+			? {
+					kind: 'damage',
+					seat: challenge.seat,
+					weapon: challenge.check.weapon,
+					...(challenge.check.target ? { target: challenge.check.target } : {})
+				}
 			: { kind: 'gm', afterSeat: challenge.seat };
 	return {
 		ok: true,
@@ -188,12 +236,10 @@ export function rollDamageCommand(state: SessionState, command: RollDamage, deps
 		return { ok: false, reason: 'There is no damage to roll.' };
 	}
 	const next: Spotlight = { kind: 'gm', afterSeat: player.seat };
+	const rolled = damage(state, player.seat, spotlight.weapon, spotlight.target, deps, deps.now().toISOString());
 	return {
 		ok: true,
-		state: withSpotlight(state, next),
-		events: [
-			logged(damage(player.seat, spotlight.weapon, deps, deps.now().toISOString())),
-			{ type: 'spotlightChanged', spotlight: next }
-		]
+		state: withSpotlight(rolled.state, next),
+		events: [...rolled.events, { type: 'spotlightChanged', spotlight: next }]
 	};
 }

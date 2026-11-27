@@ -5,8 +5,15 @@ import {
 	editInventory,
 	importCharacter,
 	loadSessionView,
+	monsterAttack,
+	moveMonster,
 	moveToken,
 	passSpotlight,
+	placeMonster,
+	removeMonster,
+	ruleOnHpChange,
+	setCharacterHp,
+	setMonsterHp,
 	postAction,
 	postChat,
 	resolveTimeout,
@@ -39,6 +46,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		sheets: view.sheets,
 		crawl: view.crawl,
 		timer: view.timer,
+		hpChanges: view.hpChanges,
 		people: view.people,
 		log: view.log,
 		players:
@@ -98,8 +106,12 @@ export const actions: Actions = {
 	challenge: async ({ params, request }) => {
 		const form = await request.formData();
 		const [type, value] = String(form.get('check') ?? '').split(':');
+		// `target` is a monster id, or empty for an attack against a DC the GM sets.
+		const target = String(form.get('target') ?? '');
 		const check: CheckChoice =
-			type === 'attack' ? { type: 'attack', weapon: Number(value) } : { type: 'test', ability: value as Ability };
+			type === 'attack'
+				? { type: 'attack', weapon: Number(value), ...(target ? { target } : {}) }
+				: { type: 'test', ability: value as Ability };
 		const custom = String(form.get('customDc') ?? '').trim();
 		const dc = Number(custom || form.get('dc'));
 		const edgeValue = String(form.get('edge') ?? '');
@@ -148,6 +160,67 @@ export const actions: Actions = {
 		if (!Number.isInteger(x) || !Number.isInteger(y)) return fail(400, { moveError: text.map.badMove });
 		const result = await moveToken(params.sessionId, params.secret, { x, y });
 		if (!result.ok) return fail(400, { moveError: result.reason });
+	},
+
+	placeMonster: async ({ params, request }) => {
+		const form = await request.formData();
+		const areaId = String(form.get('area') ?? '');
+		const result = await placeMonster(params.sessionId, params.secret, areaId, Number(form.get('index')));
+		if (!result.ok) return fail(400, { monsterError: result.reason });
+	},
+
+	moveMonster: async ({ params, request }) => {
+		const form = await request.formData();
+		const x = Number(form.get('x'));
+		const y = Number(form.get('y'));
+		if (!Number.isInteger(x) || !Number.isInteger(y)) return fail(400, { moveError: text.map.badMove });
+		const result = await moveMonster(params.sessionId, params.secret, String(form.get('id') ?? ''), { x, y });
+		if (!result.ok) return fail(400, { moveError: result.reason });
+	},
+
+	removeMonster: async ({ params, request }) => {
+		const id = String((await request.formData()).get('id') ?? '');
+		const result = await removeMonster(params.sessionId, params.secret, id);
+		if (!result.ok) return fail(400, { monsterError: result.reason });
+	},
+
+	monsterHp: async ({ params, request }) => {
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const result = await setMonsterHp(params.sessionId, params.secret, id, Number(form.get('hp')), Number(form.get('maxHp')));
+		if (!result.ok) return fail(400, { monsterError: result.reason, monsterId: id });
+	},
+
+	/** `option` indexes the monster's attack options; `edge` is empty for neither. */
+	monsterAttack: async ({ params, request }) => {
+		const form = await request.formData();
+		const edgeValue = String(form.get('edge') ?? '');
+		const edge: Edge = edgeValue === 'advantage' || edgeValue === 'disadvantage' ? edgeValue : null;
+		const id = String(form.get('id') ?? '');
+		const result = await monsterAttack(params.sessionId, params.secret, {
+			id,
+			option: Number(form.get('option')),
+			seat: Number(form.get('seat')),
+			edge
+		});
+		if (!result.ok) return fail(400, { monsterError: result.reason, monsterId: id });
+	},
+
+	/** `ruling` is `confirm` or `dismiss`; `amount` is the damage as the GM confirms it. */
+	hpChange: async ({ params, request }) => {
+		const form = await request.formData();
+		const confirm = form.get('ruling') === 'confirm';
+		const amountText = String(form.get('amount') ?? '').trim();
+		const amount = amountText === '' ? undefined : Number(amountText);
+		const result = await ruleOnHpChange(params.sessionId, params.secret, Number(form.get('id')), confirm, amount);
+		if (!result.ok) return fail(400, { hpError: result.reason });
+	},
+
+	characterHp: async ({ params, request }) => {
+		const form = await request.formData();
+		const seat = Number(form.get('seat'));
+		const result = await setCharacterHp(params.sessionId, params.secret, seat, Number(form.get('hp')));
+		if (!result.ok) return fail(400, { characterHpError: result.reason, characterHpSeat: seat });
 	},
 
 	/** `reveal` is `1` to reveal the area and `0` to hide it. */

@@ -64,6 +64,8 @@ export const text = {
 		revealHint: 'Revealing drafts the read-aloud text into your post box. Edit it, then post.',
 		atDoorway: 'At a doorway',
 		waitingAt: (who: string, area: string) => `${who} waits at the way into ${area}.`,
+		monsterToken: (id: string, name: string, condition: string) => `${id}, ${name}, ${condition}`,
+		selectMonster: (id: string, name: string) => `${id}, ${name}: select to move`,
 		unnamedRoom: 'a room',
 		unnamedPassage: 'a passage'
 	},
@@ -99,7 +101,57 @@ export const text = {
 		characters: 'Characters',
 		noCharacter: 'No character imported yet.',
 		token: (initials: string, seat: number) => `${initials}, player ${seat}`,
-		spotlightToken: (initials: string, seat: number) => `${initials}, player ${seat}, has the spotlight`
+		spotlightToken: (initials: string, seat: number) => `${initials}, player ${seat}, has the spotlight`,
+		dyingToken: 'dying',
+		dying: 'Dying',
+		dyingHint: 'At 0 HP. The GM rules on what happens.',
+		setHp: 'Set HP',
+		setHpHint: 'Your ruling: healing, stabilising, or any other change.',
+		save: 'Save'
+	},
+
+	monsters: {
+		title: 'Monsters',
+		inSight: 'Monsters in sight',
+		none: 'No monsters on the map.',
+		place: (label: string) => `Place ${label}`,
+		listed: (count: string, name: string, label: string) => `${count} × ${name} (${label})`,
+		placeHint: 'HP is rolled when you place a monster. You can edit it below the map.',
+		conditions: { unhurt: 'unhurt', wounded: 'wounded', nearDeath: 'near death', down: 'down' },
+		hp: 'HP',
+		maxHp: 'Max HP',
+		ac: 'AC',
+		saveHp: 'Save HP',
+		move: 'Move',
+		moving: (id: string) => `Tap a square to move ${id}.`,
+		cancelMove: 'Cancel',
+		remove: 'Remove',
+		attackTitle: 'Attack',
+		attackOption: 'Attack',
+		attackTarget: 'Target',
+		attackHint: 'Rolled in the open against the character’s AC and locked in the log. Damage waits for your confirmation.',
+		attackNotNow: 'Monsters attack in your turn.',
+		attackRoll: 'Roll attack',
+		noAttacks: 'This monster has no attacks.',
+		attackLine: (count: number, name: string, bonus: number | null, damage: string | null, effect: string | null) =>
+			[
+				`${count > 1 ? `${count} ` : ''}${name}${bonus === null ? '' : ` ${bonus < 0 ? '−' : '+'}${Math.abs(bonus)}`}`,
+				damage,
+				effect
+			]
+				.filter(Boolean)
+				.join(' · ')
+	},
+
+	hp: {
+		title: 'HP changes to confirm',
+		intro: 'Nothing changes until you confirm. Adjust the number first if your ruling differs.',
+		monster: (id: string, name: string) => `${id} ${name}`,
+		preview: (from: number, to: number, condition: string | null) =>
+			`${from} → ${to} HP${condition ? ` (${condition})` : ''}`,
+		amount: 'Damage',
+		confirm: 'Confirm',
+		dismiss: 'Dismiss'
 	},
 
 	crawl: {
@@ -170,6 +222,10 @@ export const text = {
 		submitRoll: 'Set challenge and roll',
 		testName: (ability: string) => `${ability} test`,
 		attackName: (weapon: string) => `Attack with ${weapon}`,
+		attackTargetName: (weapon: string, target: string) => `Attack ${target} with ${weapon}`,
+		targetLabel: 'Target',
+		otherTarget: 'Something else',
+		dcFromAc: (ac: number) => `DC is the target’s AC: ${ac}`,
 		edgeNote: { advantage: 'with advantage', disadvantage: 'with disadvantage' },
 		yourChallenge: 'The GM sets a challenge',
 		waiting: (name: string) => `${name} decides whether to roll.`,
@@ -220,6 +276,15 @@ export const text = {
 		declined: (name: string) => `${name} backs out.`,
 		damage: (name: string, weapon: string) => `${name} rolls damage with ${weapon}`,
 		damageLine: (formula: string, rolls: number[], total: number) => `${formula}: ${rolls.join(' + ') || '0'} → ${total}`,
+		damageTarget: (name: string, weapon: string, target: string) => `${name} hits ${target} with ${weapon}`,
+		monsterAttack: (monster: string, name: string) => `${monster} attacks ${name}`,
+		strike: (attack: string) => attack,
+		vsAc: (total: number, ac: number) => `= ${total} vs AC ${ac}`,
+		hit: 'Hit',
+		miss: 'Miss',
+		monsterHurt: (monster: string, condition: string) => `${monster} is ${condition}.`,
+		characterHurt: (name: string, amount: number) => `${name} loses ${amount} HP.`,
+		dying: (name: string) => `${name} is dying. The GM rules on what happens.`,
 		readMore: 'Read more',
 		readLess: 'Show less',
 		gm: 'GM'

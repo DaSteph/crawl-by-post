@@ -41,6 +41,28 @@ import {
 	type TurnClock,
 	type TurnTimerFired
 } from './timeouts.ts';
+import {
+	confirmHpChange,
+	dismissHpChange,
+	isDying,
+	monsterAttack,
+	moveMonster,
+	occupiedCells,
+	placeMonster,
+	removeMonster,
+	setCharacterHp,
+	setMonsterHp,
+	type ConfirmHpChange,
+	type DismissHpChange,
+	type HpChange,
+	type MonsterAttack,
+	type MoveMonster,
+	type PlacedMonster,
+	type PlaceMonster,
+	type RemoveMonster,
+	type SetCharacterHp,
+	type SetMonsterHp
+} from './monsters.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -78,6 +100,8 @@ export type Sheet = {
 	initials: string;
 	character: Character;
 	hp: number;
+	/** True at 0 HP. The GM rules on what happens. */
+	dying: boolean;
 	inventory: string;
 };
 
@@ -97,6 +121,13 @@ export type SessionState = {
 	turnTimeoutHours?: number;
 	/** The clock of the current spotlight turn. Kept outside `crawl` so its id keeps counting across crawls. */
 	turnClock?: TurnClock;
+	/** Monster tokens on the map. */
+	monsters?: PlacedMonster[];
+	/** How many monsters of each file label have been placed, so token labels never repeat. */
+	monsterCounts?: Record<string, number>;
+	/** Damage waiting for the GM to confirm. */
+	hpChanges?: HpChange[];
+	lastHpChangeId?: number;
 };
 
 export type Command =
@@ -118,7 +149,15 @@ export type Command =
 	| RollDamage
 	| SetTurnTimeout
 	| TurnTimerFired
-	| ResolveTimeout;
+	| ResolveTimeout
+	| PlaceMonster
+	| MoveMonster
+	| RemoveMonster
+	| SetMonsterHp
+	| ConfirmHpChange
+	| DismissHpChange
+	| MonsterAttack
+	| SetCharacterHp;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -142,7 +181,18 @@ export type EngineEvent =
 	| { type: 'turnReminderDue'; holder: 'gm' | number }
 	/** A player's turn ran out; the GM decides what happens. */
 	| { type: 'playerTimedOut'; seat: number }
-	| { type: 'turnTimeoutChanged'; hours: number };
+	| { type: 'turnTimeoutChanged'; hours: number }
+	| { type: 'monsterPlaced'; id: string; position: Position }
+	| { type: 'monsterMoved'; id: string; position: Position }
+	| { type: 'monsterRemoved'; id: string }
+	| { type: 'monsterHpSet'; id: string }
+	/** Damage that only takes effect once the GM confirms it. */
+	| { type: 'hpChangeSuggested'; change: HpChange }
+	| { type: 'hpChangeConfirmed'; id: number; amount: number }
+	| { type: 'hpChangeDismissed'; id: number }
+	| { type: 'characterHpSet'; seat: number }
+	/** A character dropped to 0 HP. */
+	| { type: 'characterDying'; seat: number };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -218,6 +268,22 @@ function dispatch(state: SessionState, command: Exclude<Command, { type: 'create
 			return turnTimerFired(state, command, deps);
 		case 'resolveTimeout':
 			return resolveTimeout(state, command, deps);
+		case 'placeMonster':
+			return placeMonster(state, command, deps);
+		case 'moveMonster':
+			return moveMonster(state, command);
+		case 'removeMonster':
+			return removeMonster(state, command);
+		case 'setMonsterHp':
+			return setMonsterHp(state, command);
+		case 'confirmHpChange':
+			return confirmHpChange(state, command, deps);
+		case 'dismissHpChange':
+			return dismissHpChange(state, command);
+		case 'monsterAttack':
+			return monsterAttack(state, command, deps);
+		case 'setCharacterHp':
+			return setCharacterHp(state, command, deps);
 	}
 }
 
@@ -249,9 +315,7 @@ function withPlayer(state: SessionState, seat: number, change: Partial<PlayerSlo
 /** A free square in the start area, so tokens don't stack. Falls back to the first square. */
 function startPosition(state: SessionState, dungeon: Dungeon): Position {
 	const area = dungeon.areas.find((a) => a.id === dungeon.start)!;
-	const taken = new Set(
-		state.players.filter((p) => p.position?.area === area.id).map((p) => `${p.position!.cell.x},${p.position!.cell.y}`)
-	);
+	const taken = occupiedCells(state);
 	const cells = cellsOf(area.rect);
 	const cell = cells.find((c) => !taken.has(`${c.x},${c.y}`)) ?? cells[0];
 	return { area: area.id, cell };
@@ -311,6 +375,7 @@ function sheetOf(p: PlayerSlot): Sheet | null {
 		initials: initials(p.character.name),
 		character: p.character,
 		hp: p.hp ?? p.character.maxHp,
+		dying: isDying(p),
 		inventory: p.inventory ?? ''
 	};
 }

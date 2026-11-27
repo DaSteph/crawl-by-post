@@ -25,6 +25,7 @@ import { loadDungeon } from './dungeons.ts';
 import { pushAfterCommand } from './push.ts';
 import { applyTimerEvents, type TurnTimerJob } from './jobs.ts';
 import { timeoutAt, turnTimeoutHours, type TimeoutResolution } from '#lib/engine/timeouts.ts';
+import type { HpChange } from '#lib/engine/monsters.ts';
 
 const deps: Deps = {
 	dice: (sides) => randomInt(1, sides + 1),
@@ -209,6 +210,55 @@ export async function setAreaRevealed(
 	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setAreaRevealed', by: bySecret, areaId, revealed, dungeon }));
 }
 
+export async function placeMonster(sessionId: string, bySecret: string, areaId: string, index: number): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'placeMonster', by: bySecret, areaId, index, dungeon }));
+}
+
+export async function moveMonster(sessionId: string, bySecret: string, id: string, to: Cell): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'moveMonster', by: bySecret, id, to, dungeon }));
+}
+
+export async function removeMonster(sessionId: string, bySecret: string, id: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'removeMonster', by: bySecret, id }, false);
+}
+
+export async function setMonsterHp(
+	sessionId: string,
+	bySecret: string,
+	id: string,
+	hp: number,
+	maxHp: number
+): Promise<CommandResult> {
+	return run(sessionId, { type: 'setMonsterHp', by: bySecret, id, hp, maxHp }, false);
+}
+
+/** Confirms the HP change `id` (with `amount` when the GM changed it), or dismisses it. */
+export async function ruleOnHpChange(
+	sessionId: string,
+	bySecret: string,
+	id: number,
+	confirm: boolean,
+	amount?: number
+): Promise<CommandResult> {
+	return run(
+		sessionId,
+		confirm ? { type: 'confirmHpChange', by: bySecret, id, amount } : { type: 'dismissHpChange', by: bySecret, id },
+		false
+	);
+}
+
+export async function monsterAttack(
+	sessionId: string,
+	bySecret: string,
+	attack: { id: string; option: number; seat: number; edge: Edge }
+): Promise<CommandResult> {
+	return run(sessionId, { type: 'monsterAttack', by: bySecret, ...attack }, false);
+}
+
+export async function setCharacterHp(sessionId: string, bySecret: string, seat: number, hp: number): Promise<CommandResult> {
+	return run(sessionId, { type: 'setCharacterHp', by: bySecret, seat, hp }, false);
+}
+
 /** How much of the log a page load brings. Older entries stay in the database. */
 const LOG_WINDOW = 300;
 
@@ -237,6 +287,8 @@ export type SessionView =
 			map: MapLoad;
 			crawl: Crawl | null;
 			timer: TurnTimer;
+			/** Damage waiting for the GM's confirmation; empty for players. */
+			hpChanges: HpChange[];
 			people: Person[];
 			log: LogRecord[];
 	  }
@@ -280,6 +332,7 @@ export async function loadSessionView(sessionId: string, secret: string): Promis
 			timeoutAt: timeoutAt(state)?.toISOString() ?? null,
 			timedOut: Boolean(state.crawl && state.turnClock?.timedOut)
 		},
+		hpChanges: visitor.role === 'gm' ? (state.hpChanges ?? []) : [],
 		people: people(state),
 		log: await loadLog(sessionId)
 	};

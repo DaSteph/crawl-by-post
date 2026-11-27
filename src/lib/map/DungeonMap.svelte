@@ -3,6 +3,7 @@
 	import type { Cell } from '#lib/dungeon/model.ts';
 	import { inRect } from '#lib/dungeon/model.ts';
 	import type { MapView } from '#lib/engine/map.ts';
+	import type { Moves } from '#lib/engine/movement.ts';
 	import { text } from '#lib/text.ts';
 	import { mapGeometry, type Door } from './geometry.ts';
 
@@ -10,16 +11,27 @@
 		view,
 		focus = null,
 		busy = false,
-		onmove
+		onmove,
+		moves: movesOverride,
+		selectedMonster = null,
+		onselectmonster
 	}: {
 		view: MapView;
 		/** A square to scroll into the middle on load, e.g. the viewer's token. */
 		focus?: Cell | null;
 		/** True while a move is on its way; targets stay visible but don't react. */
 		busy?: boolean;
-		/** Called with the tapped square when `view.moves` offers it. */
+		/** Called with the tapped square when `moves` offers it. */
 		onmove?: (cell: Cell) => void;
+		/** The squares on offer; defaults to `view.moves`, the viewer's own token moves. */
+		moves?: Moves | null;
+		/** GM: the monster being moved, drawn highlighted. */
+		selectedMonster?: string | null;
+		/** GM: called when a monster token is tapped. */
+		onselectmonster?: (id: string) => void;
 	} = $props();
+
+	const activeMoves = $derived(movesOverride === undefined ? view.moves : movesOverride);
 
 	/** One grid square in SVG units. */
 	const C = 24;
@@ -34,7 +46,7 @@
 	const areaAt = (cell: Cell) => view.areas.find((a) => inRect(cell, a.rect));
 	// The GM sees unknown areas drawn dashed already, so "?" only goes where nothing is drawn.
 	const markers = $derived(view.unknown.filter((u) => !areaAt(u.at)));
-	const doorwayTargets = $derived(new Set((view.moves?.doorways ?? []).map((c) => `${c.x},${c.y}`)));
+	const doorwayTargets = $derived(new Set((activeMoves?.doorways ?? []).map((c) => `${c.x},${c.y}`)));
 	const isDoorwayTarget = (cell: Cell) => !!onmove && doorwayTargets.has(`${cell.x},${cell.y}`);
 
 	function targetLabel(cell: Cell) {
@@ -148,10 +160,11 @@
 			transform="translate({(token.cell.x + 0.5) * C} {(token.cell.y + 0.5) * C})"
 			class="player-token {token.tokenColour}"
 			class:spotlight={token.spotlight}
+			class:dying={token.dying}
 			role="img"
-			aria-label={token.spotlight
+			aria-label={(token.spotlight
 				? text.character.spotlightToken(token.initials, token.seat)
-				: text.character.token(token.initials, token.seat)}
+				: text.character.token(token.initials, token.seat)) + (token.dying ? `, ${text.character.dyingToken}` : '')}
 		>
 			{#if token.spotlight}
 				<circle r={C * 0.42} class="pulse" />
@@ -162,8 +175,49 @@
 		</g>
 	{/each}
 
-	{#if onmove && view.moves}
-		{#each view.moves.cells as cell (`${cell.x},${cell.y}`)}
+	{#snippet monsterDisc(monster: MapView['monsters'][number])}
+		{#if selectedMonster === monster.id}
+			<circle r={C * 0.42 + 3.5} class="ring" />
+		{/if}
+		<circle r={C * 0.42} class="disc" />
+		<text text-anchor="middle" dominant-baseline="central" class:long={monster.id.length > 2}>{monster.id}</text>
+	{/snippet}
+	{#each view.monsters as monster (monster.id)}
+		{@const label = text.map.monsterToken(monster.id, monster.name, text.monsters.conditions[monster.condition])}
+		{#if onselectmonster}
+			<g
+				transform="translate({(monster.cell.x + 0.5) * C} {(monster.cell.y + 0.5) * C})"
+				class="monster-token selectable"
+				class:selected={selectedMonster === monster.id}
+				role="button"
+				tabindex="0"
+				aria-label={text.map.selectMonster(monster.id, monster.name)}
+				aria-pressed={selectedMonster === monster.id}
+				onclick={() => onselectmonster(monster.id)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault();
+						onselectmonster(monster.id);
+					}
+				}}
+			>
+				{@render monsterDisc(monster)}
+			</g>
+		{:else}
+			<g
+				transform="translate({(monster.cell.x + 0.5) * C} {(monster.cell.y + 0.5) * C})"
+				class="monster-token"
+				role="img"
+				aria-label={label}
+			>
+				<title>{label}</title>
+				{@render monsterDisc(monster)}
+			</g>
+		{/if}
+	{/each}
+
+	{#if onmove && activeMoves}
+		{#each activeMoves.cells as cell (`${cell.x},${cell.y}`)}
 			<g
 				transform="translate({cell.x * C} {cell.y * C})"
 				class="move"
@@ -324,6 +378,32 @@
 	}
 	.player-token.magenta .disc {
 		fill: var(--token-magenta);
+	}
+	.player-token.dying .disc {
+		opacity: 0.45;
+		stroke-dasharray: 2.5 2;
+		stroke-width: 2;
+	}
+	.monster-token .disc {
+		fill: var(--monster);
+		stroke: var(--monster-outline);
+		stroke-width: var(--monster-outline-width);
+	}
+	.monster-token text {
+		fill: var(--monster-text);
+		font-size: 9.5px;
+		font-weight: 700;
+	}
+	.monster-token text.long {
+		font-size: 7.5px;
+	}
+	.monster-token.selectable {
+		cursor: pointer;
+		outline: none;
+	}
+	.monster-token.selectable:focus-visible .disc {
+		stroke: var(--focus);
+		stroke-width: 3;
 	}
 	.door.hidden rect {
 		stroke: var(--ink-2);

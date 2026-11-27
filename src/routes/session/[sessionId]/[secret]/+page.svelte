@@ -3,8 +3,11 @@
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
-	import type { Cell } from '#lib/dungeon/model.ts';
+	import { cellsOf, type Cell } from '#lib/dungeon/model.ts';
 	import type { MapArea } from '#lib/engine/map.ts';
+	import type { Moves } from '#lib/engine/movement.ts';
+	import MonsterPanel from '#lib/monsters/MonsterPanel.svelte';
+	import HpChanges from '#lib/monsters/HpChanges.svelte';
 	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
 	import Compose from '#lib/turn/Compose.svelte';
 	import Log from '#lib/turn/Log.svelte';
@@ -34,6 +37,11 @@
 	let compose: ReturnType<typeof Compose> | undefined = $state();
 	/** The area whose reveal or hide is on its way. */
 	let revealing = $state<string | null>(null);
+	let placing = $state(false);
+	/** GM: the monster whose new square is being picked on the map. */
+	let movingMonster = $state<string | null>(null);
+	let monsterMoveForm: HTMLFormElement | undefined = $state();
+	let monsterTarget = $state<Cell | null>(null);
 
 	const mapView = $derived(data.map.ok ? data.map.view : null);
 	const ownToken = $derived(
@@ -56,6 +64,22 @@
 					return seats.length && area ? [{ area, who: seats.map((t) => nameOf(t.seat)).join(', ') }] : [];
 				})
 	);
+
+	/** GM: every free square of the dungeon, while a monster is being moved. */
+	const monsterMoves = $derived.by((): Moves | null => {
+		if (!movingMonster || !mapView) return null;
+		const view = mapView;
+		const taken = new Set([...view.tokens, ...view.monsters].map((t) => `${t.cell.x},${t.cell.y}`));
+		const cells = view.areas.flatMap((a) => cellsOf(a.rect)).filter((c) => !taken.has(`${c.x},${c.y}`));
+		return { cells, doorways: [] };
+	});
+
+	async function moveMonster(cell: Cell) {
+		if (moving || !monsterMoveForm) return;
+		monsterTarget = cell;
+		await tick();
+		monsterMoveForm.requestSubmit();
+	}
 
 	async function move(cell: Cell) {
 		if (moving || !moveForm) return;
@@ -168,6 +192,26 @@
 	</form>
 {/snippet}
 
+{#snippet placeForms(area: MapArea)}
+	{#each area.monsters as m (m.index)}
+		<form
+			method="POST"
+			action="?/placeMonster"
+			use:enhance={() => {
+				placing = true;
+				return async ({ update }) => {
+					await update({ reset: false });
+					placing = false;
+				};
+			}}
+		>
+			<input type="hidden" name="area" value={area.id} />
+			<input type="hidden" name="index" value={m.index} />
+			<button class="button secondary" disabled={placing}>{text.monsters.place(`${m.name} (${m.label})`)}</button>
+		</form>
+	{/each}
+{/snippet}
+
 {#snippet crawlForm()}
 	<form
 		method="POST"
@@ -208,12 +252,40 @@
 <section class="card map-card stack" aria-label={text.map.areas}>
 	{#if data.map.ok}
 		<h2>{data.map.view.dungeonName}</h2>
-		<DungeonMap
-			view={data.map.view}
-			focus={focusCell}
-			busy={moving}
-			onmove={data.map.view.moves ? move : undefined}
-		/>
+		{#if visitor.role === 'gm'}
+			<DungeonMap
+				view={data.map.view}
+				focus={focusCell}
+				busy={moving}
+				moves={monsterMoves}
+				onmove={movingMonster ? moveMonster : undefined}
+				selectedMonster={movingMonster}
+				onselectmonster={(id) => (movingMonster = movingMonster === id ? null : id)}
+			/>
+			{#if movingMonster}
+				<div class="row wrap">
+					<p class="small" role="status">{moving ? text.map.moving : text.monsters.moving(movingMonster)}</p>
+					<button type="button" class="button secondary" onclick={() => (movingMonster = null)}>{text.monsters.cancelMove}</button>
+				</div>
+			{/if}
+		{:else}
+			<DungeonMap
+				view={data.map.view}
+				focus={focusCell}
+				busy={moving}
+				onmove={data.map.view.moves ? move : undefined}
+			/>
+		{/if}
+		{#if visitor.role === 'player' && data.map.view.monsters.length}
+			<div class="stack-sm" aria-label={text.monsters.inSight}>
+				<strong class="small">{text.monsters.inSight}</strong>
+				<ul class="monster-list">
+					{#each data.map.view.monsters as m (m.id)}
+						<li><span class="monster-disc" aria-hidden="true">{m.id}</span> {m.name} · <strong>{text.monsters.conditions[m.condition]}</strong></li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
 		{#if data.map.view.moves}
 			<p class="small" role="status">{moving ? text.map.moving : text.map.moveHint}</p>
 		{/if}
@@ -236,6 +308,24 @@
 			<input type="hidden" name="x" value={moveTarget?.x ?? ''} />
 			<input type="hidden" name="y" value={moveTarget?.y ?? ''} />
 		</form>
+		<form
+			method="POST"
+			action="?/moveMonster"
+			hidden
+			bind:this={monsterMoveForm}
+			use:enhance={() => {
+				moving = true;
+				return async ({ result, update }) => {
+					await update({ reset: false, invalidateAll: true });
+					moving = false;
+					if (result.type === 'success') movingMonster = null;
+				};
+			}}
+		>
+			<input type="hidden" name="id" value={movingMonster ?? ''} />
+			<input type="hidden" name="x" value={monsterTarget?.x ?? ''} />
+			<input type="hidden" name="y" value={monsterTarget?.y ?? ''} />
+		</form>
 		{#if visitor.role === 'gm'}
 			{#if waiting.length}
 				<div class="waiting stack-sm" aria-label={text.map.atDoorway}>
@@ -245,12 +335,18 @@
 							<span>{text.map.waitingAt(w.who, w.area.name ?? text.map.corridor(w.area.id))}</span>
 							{@render revealForm(w.area)}
 						</div>
+						{#if w.area.monsters.length}
+							<div class="row wrap start">{@render placeForms(w.area)}</div>
+						{/if}
 					{/each}
 					<p class="muted small">{text.map.revealHint}</p>
 				</div>
 			{/if}
 			{#if form?.revealError}
 				<p class="error" role="alert">{form.revealError}</p>
+			{/if}
+			{#if form?.monsterError && !form?.monsterId}
+				<p class="error" role="alert">{form.monsterError}</p>
 			{/if}
 			<p class="muted small">{text.map.gmHint}</p>
 		{/if}
@@ -269,6 +365,14 @@
 {#if me !== null}
 	<section class="card stack">
 		<Log log={data.log} people={data.people} {areaName} />
+		{#if visitor.role === 'gm' && data.hpChanges.length}
+			<HpChanges
+				changes={data.hpChanges}
+				monsters={mapView?.monsters ?? []}
+				sheets={data.sheets}
+				error={form?.hpError ?? null}
+			/>
+		{/if}
 		{#if spotlight?.kind === 'challenge' || spotlight?.kind === 'damage'}
 			<ChallengePrompt
 				pending={spotlight}
@@ -294,6 +398,7 @@
 				<ChallengeForm
 					sheet={challengeSheet}
 					preConsent={spotlight.preConsent ?? false}
+					monsters={mapView?.monsters ?? []}
 					error={form?.challengeError ?? null}
 				/>
 			</details>
@@ -305,6 +410,22 @@
 			{holder}
 			{acting}
 			serverError={form?.postError ?? null}
+		/>
+	</section>
+{/if}
+
+{#if visitor.role === 'gm' && mapView}
+	<section class="card stack">
+		<h2>{text.monsters.title}</h2>
+		<MonsterPanel
+			monsters={mapView.monsters}
+			sheets={data.sheets}
+			gmTurn={spotlight?.kind === 'gm'}
+			defaultSeat={spotlight?.kind === 'gm' ? spotlight.afterSeat : null}
+			moving={movingMonster}
+			onmove={(id) => (movingMonster = id)}
+			error={form?.monsterError ?? null}
+			errorFor={form?.monsterId ?? null}
 		/>
 	</section>
 {/if}
@@ -363,7 +484,7 @@
 	<section class="card stack" aria-label={text.character.importTitle}>
 		{#if ownSheet}
 			<details open>
-				<summary><span>{ownSheet.character.name}</span><span class="muted small">{text.character.hp} {ownSheet.hp}/{ownSheet.character.maxHp} · {text.character.ac} {ownSheet.character.ac}</span></summary>
+				<summary><span>{ownSheet.character.name}</span><span class="muted small">{text.character.hp} {ownSheet.hp}/{ownSheet.character.maxHp} · {text.character.ac} {ownSheet.character.ac}{#if ownSheet.dying} · <strong>{text.character.dying}</strong>{/if}</span></summary>
 				<CharacterCard sheet={ownSheet} />
 			</details>
 			<form
@@ -455,8 +576,10 @@
 							{/if}
 							{#if area.monsters.length}
 								<dt>{text.map.monsters}</dt>
-								<dd>
-									{area.monsters.map((m) => `${m.count} × ${m.name} (${m.label})`).join(', ')}
+								<dd class="stack-sm">
+									<span>{area.monsters.map((m) => text.monsters.listed(m.count, m.name, m.label)).join(', ')}</span>
+									<div class="row wrap start">{@render placeForms(area)}</div>
+									<span class="muted small">{text.monsters.placeHint}</span>
 								</dd>
 							{/if}
 						</dl>
@@ -485,8 +608,21 @@
 						{#if sheetBySeat.get(player.seat)}
 							{@const sheet = sheetBySeat.get(player.seat)!}
 							<details>
-								<summary><span>{sheet.character.name}</span><span class="muted small">{text.character.hp} {sheet.hp}/{sheet.character.maxHp} · {text.character.ac} {sheet.character.ac}</span></summary>
+								<summary><span>{sheet.character.name}</span><span class="muted small">{text.character.hp} {sheet.hp}/{sheet.character.maxHp} · {text.character.ac} {sheet.character.ac}{#if sheet.dying} · <strong>{text.character.dying}</strong>{/if}</span></summary>
 								<CharacterCard {sheet} />
+								<form method="POST" action="?/characterHp" class="stack-sm" use:enhance={() => async ({ update }) => update({ reset: false })}>
+									<input type="hidden" name="seat" value={sheet.seat} />
+									<label for="hp-{sheet.seat}"><strong>{text.character.setHp}</strong></label>
+									<p class="muted small">{text.character.setHpHint}</p>
+									<div class="row">
+										<input id="hp-{sheet.seat}" name="hp" type="number" inputmode="numeric" min="0" max={sheet.character.maxHp} step="1" required value={sheet.hp} />
+										<span class="muted">/ {sheet.character.maxHp}</span>
+										<button class="button secondary">{text.character.save}</button>
+									</div>
+									{#if form?.characterHpError && form?.characterHpSeat === sheet.seat}
+										<p class="error" role="alert">{form.characterHpError}</p>
+									{/if}
+								</form>
 								{#if sheet.inventory}
 									<p class="small"><strong>{text.character.inventory}:</strong> <span class="pre">{sheet.inventory}</span></p>
 								{/if}
@@ -601,6 +737,32 @@
 	.row.wrap {
 		flex-wrap: wrap;
 		justify-content: space-between;
+	}
+	.row.wrap.start {
+		justify-content: flex-start;
+		gap: 8px;
+	}
+	.monster-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 16px;
+	}
+	.monster-list li {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.monster-disc {
+		display: inline-grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: var(--monster);
+		color: var(--monster-text);
+		box-shadow: 0 0 0 var(--monster-outline-width) var(--monster-outline);
+		font-size: 0.65rem;
+		font-weight: 700;
 	}
 	.waiting {
 		padding: 10px 12px;

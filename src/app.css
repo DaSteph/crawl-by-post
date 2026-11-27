@@ -21,6 +21,11 @@
 	--token-green: #2e8b57;
 	--token-magenta: #c03a7e;
 	--token-text: #ffffff;
+	/* Monsters are black discs in both modes; dark mode gives them a stronger light outline. */
+	--monster: #111316;
+	--monster-text: #ffffff;
+	--monster-outline: var(--ink);
+	--monster-outline-width: 1.5px;
 
 	--focus: var(--token-blue);
 	--radius: 10px;
@@ -45,6 +50,7 @@
 		--token-green: #63c990;
 		--token-magenta: #f08cc0;
 		--token-text: #15171a;
+		--monster-outline-width: 2.5px;
 
 		color-scheme: dark;
 	}

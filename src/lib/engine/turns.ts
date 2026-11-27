@@ -5,6 +5,7 @@
 import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts';
 import type { Challenge, ChallengeEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
 import type { TimeoutEntry } from './timeouts.ts';
+import type { MonsterEntry, MonsterRef } from './monsters.ts';
 
 export const DANGER_LEVELS = ['unsafe', 'risky', 'deadly'] as const;
 export type Danger = (typeof DANGER_LEVELS)[number];
@@ -28,7 +29,7 @@ export type Spotlight =
 	| { kind: 'player'; seat: number }
 	| { kind: 'gm'; afterSeat: number; preConsent?: true }
 	| { kind: 'challenge'; seat: number; challenge: Challenge }
-	| { kind: 'damage'; seat: number; weapon: WeaponRef };
+	| { kind: 'damage'; seat: number; weapon: WeaponRef; target?: MonsterRef };
 
 export type Crawl = {
 	danger: Danger;
@@ -68,6 +69,7 @@ export type LogEntry = { at: string } & (
 	| { kind: 'declined'; seat: number }
 	| DamageEntry
 	| TimeoutEntry
+	| MonsterEntry
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };

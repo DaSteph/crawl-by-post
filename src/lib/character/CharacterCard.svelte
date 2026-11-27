@@ -25,13 +25,15 @@
 	<dl class="vitals">
 		<div>
 			<dt>{t.hp}</dt>
-			<dd><strong>{sheet.hp}</strong> / {c.maxHp}</dd>
+			<dd><strong>{sheet.hp}</strong> / {c.maxHp}{#if sheet.dying} · <strong class="dying">{t.dying}</strong>{/if}</dd>
 		</div>
 		<div>
 			<dt>{t.ac}</dt>
 			<dd><strong>{c.ac}</strong></dd>
 		</div>
 	</dl>
+
+	{#if sheet.dying}<p class="dying-hint" role="status">{t.dyingHint}</p>{/if}
 
 	<h4>{t.abilities}</h4>
 	<dl class="abilities">
@@ -158,5 +160,16 @@
 		flex-wrap: wrap;
 		gap: 2px 8px;
 		align-items: baseline;
+	}
+	.dying {
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.dying-hint {
+		margin: 0;
+		padding: 6px 10px;
+		border: 2px dashed var(--ink);
+		border-radius: var(--radius);
+		font-weight: 600;
 	}
 </style>

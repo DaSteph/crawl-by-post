@@ -172,7 +172,7 @@ describe('characters', () => {
 
 		expect(events).toEqual([{ type: 'characterImported', seat: 1, name: 'Gelan (Arden Vul)' }]);
 		expect(sheets(state, 'p1')).toEqual([
-			{ seat: 1, tokenColour: 'blue', initials: 'Ge', character: gelan, hp: 13, inventory: '' }
+			{ seat: 1, tokenColour: 'blue', initials: 'Ge', character: gelan, hp: 13, dying: false, inventory: '' }
 		]);
 	});
 
