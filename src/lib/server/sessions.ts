@@ -207,6 +207,10 @@ async function runWithDungeon(
 	return run(sessionId, command(loaded.dungeon), false);
 }
 
+export async function setLanguage(sessionId: string, bySecret: string, language: string): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setLanguage', by: bySecret, language, dungeon }));
+}
+
 export async function moveToken(sessionId: string, bySecret: string, to: Cell): Promise<CommandResult> {
 	return runWithDungeon(sessionId, (dungeon) => ({ type: 'moveToken', by: bySecret, to, dungeon }));
 }

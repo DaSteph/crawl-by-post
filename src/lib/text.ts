@@ -242,6 +242,24 @@ export const text = {
 		place: (name: string) => `Place ${name}`
 	},
 
+	language: {
+		settingsTitle: 'Content language',
+		settingsHint:
+			'The language of the dungeon’s names, mood texts and notes, for everyone in this session. Buttons and menus stay in English. Monsters already on the map keep their names.',
+		label: 'Language',
+		/** The language's name in that language, e.g. "Deutsch" for de; the code when the browser doesn't know it. */
+		name: (code: string) => {
+			try {
+				const name = new Intl.DisplayNames([code], { type: 'language' }).of(code);
+				return name ? name.charAt(0).toLocaleUpperCase(code) + name.slice(1) : code;
+			} catch {
+				return code;
+			}
+		},
+		save: 'Save',
+		saved: 'Saved'
+	},
+
 	timeout: {
 		title: (name: string) => `${name}’s turn timed out`,
 		intro: 'An absent player is a ruling, not a punishment. You decide what happens.',

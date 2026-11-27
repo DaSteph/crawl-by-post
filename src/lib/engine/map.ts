@@ -10,6 +10,7 @@ import { spotlightHolder } from './turns.ts';
 import { doorways, movesFor, type Moves } from './movement.ts';
 import { conditionOf, isDying, type Condition } from './monsters.ts';
 import type { AttackOption } from '../dungeon/model.ts';
+import { sessionLanguage } from './language.ts';
 import { burningLights, flameLevel, inDarkness, isLit, type AreaLight, type FlameLevel } from './light.ts';
 
 /** A monster listed for an area in the dungeon file. `index` is what the GM places it by. */
@@ -83,6 +84,10 @@ export type MapUnknown = { at: Cell; doorway: Cell; area: string | null };
 
 export type MapView = {
 	dungeonName: string;
+	/** The language the dungeon's prose shows in. */
+	language: string;
+	/** The languages the GM can switch to, default first. Empty for players. */
+	languages: string[];
 	areas: MapArea[];
 	exits: MapExit[];
 	tokens: MapToken[];
@@ -97,9 +102,8 @@ export type MapView = {
 
 /** `seat` is the viewing player's seat, for their moves. */
 export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'player', seat?: number): MapView {
-	const fallback = dungeon.languages[0];
-	// Sessions don't choose a language yet, so content shows in the default language.
-	const t = (text: LocalizedText | null) => (text ? localize(text, fallback, fallback) : null);
+	const language = sessionLanguage(state, dungeon);
+	const t = (text: LocalizedText | null) => (text ? localize(text, language, dungeon.languages[0]) : null);
 	const revealed = new Set(state.revealed);
 	const gm = role === 'gm';
 
@@ -177,7 +181,19 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		? dungeon.wandering.map((m, index) => ({ index, label: m.label, name: t(m.name)!, count: formatDice(m.count) }))
 		: [];
 
-	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, lights, wandering, moves };
+	return {
+		dungeonName: t(dungeon.name)!,
+		language,
+		languages: gm ? dungeon.languages : [],
+		areas,
+		exits,
+		tokens,
+		monsters,
+		unknown,
+		lights,
+		wandering,
+		moves
+	};
 }
 
 /** Players see exits of revealed areas; a secret one only once both its sides are revealed (found). */

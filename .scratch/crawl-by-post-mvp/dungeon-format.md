@@ -33,7 +33,7 @@ Every prose field (`name`, `mood`, `notes`, monster `name`/`notes`) takes either
 - a plain string, which counts as the default language, or
 - a map from language code to string: `{ en: "...", de: "..." }`. The default language is required, and every key must be listed in `languages`.
 
-The app picks the session's language and falls back to the default language. UI text stays in `src/lib/text.ts`; this only covers content from the dungeon file.
+The GM picks the session's language on the session page ("Content language", shown when the file has more than one language; changeable any time). Text without that language falls back to the default language. Monsters already placed keep the name they were placed with. UI text stays in `src/lib/text.ts`; this only covers content from the dungeon file.
 
 ## Areas: rooms and corridor segments
 

@@ -85,6 +85,7 @@ import {
 	type SkipWanderingCheck
 } from './wandering.ts';
 import { endCombat, startCombat, type EndCombat, type StartCombat } from './combat.ts';
+import { setLanguage, type SetLanguage } from './language.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -155,6 +156,8 @@ export type SessionState = {
 	lastLightId?: number;
 	/** The GM's light rulings per area id. Areas without one are lit by carried light. */
 	areaLight?: Record<string, AreaLight>;
+	/** The GM's choice of the dungeon file's languages. Absent means the file's default language. */
+	language?: string;
 };
 
 export type Command =
@@ -192,7 +195,8 @@ export type Command =
 	| PostponeWanderingCheck
 	| SkipWanderingCheck
 	| StartCombat
-	| EndCombat;
+	| EndCombat
+	| SetLanguage;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -239,7 +243,8 @@ export type EngineEvent =
 	/** Round `round` completed and a wandering monster check is due. Only the GM is told. */
 	| { type: 'wanderingCheckDue'; round: number }
 	| { type: 'wanderingCheckPostponed' }
-	| { type: 'wanderingCheckSkipped' };
+	| { type: 'wanderingCheckSkipped' }
+	| { type: 'languageChanged'; language: string };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -347,6 +352,8 @@ function dispatch(state: SessionState, command: Exclude<Command, { type: 'create
 			return startCombat(state, command, deps);
 		case 'endCombat':
 			return endCombat(state, command, deps);
+		case 'setLanguage':
+			return setLanguage(state, command);
 	}
 }
 

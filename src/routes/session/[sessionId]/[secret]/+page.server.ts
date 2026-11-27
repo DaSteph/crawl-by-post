@@ -24,6 +24,7 @@ import {
 	setChallenge,
 	setLightCounter,
 	setTurnTimeout,
+	setLanguage,
 	startCrawl,
 	startCombat,
 	endCombat,
@@ -155,6 +156,13 @@ export const actions: Actions = {
 		const result = await setTurnTimeout(params.sessionId, params.secret, hours);
 		if (!result.ok) return fail(400, { timeoutError: result.reason });
 		return { timeoutSaved: true };
+	},
+
+	language: async ({ params, request }) => {
+		const language = String((await request.formData()).get('language') ?? '');
+		const result = await setLanguage(params.sessionId, params.secret, language);
+		if (!result.ok) return fail(400, { languageError: result.reason });
+		return { languageSaved: true };
 	},
 
 	/** `resolution` is `skip`, `wait` or `playAs`; `text` is the post for `playAs` on an action turn. */

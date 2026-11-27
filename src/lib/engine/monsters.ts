@@ -12,6 +12,7 @@ import { formatDice, rollDice, type DiceFormula } from './dice.ts';
 import type { CommandResult, Deps, EngineEvent, PlayerSlot, Position, SessionState } from './index.ts';
 import type { Edge } from './challenges.ts';
 import { logged, type LogEntry } from './turns.ts';
+import { sessionLanguage } from './language.ts';
 
 export const MAX_HP = 999;
 
@@ -22,7 +23,7 @@ export type Condition = 'unhurt' | 'wounded' | 'nearDeath' | 'down';
 export type PlacedMonster = {
 	/** The token label, unique in the session: the file's label plus a number ("G1", "G2"). */
 	id: string;
-	/** In the dungeon's default language. */
+	/** In the session language at placement; a later language change doesn't rename the token. */
 	name: string;
 	ac: number;
 	attacks: AttackOption[];
@@ -140,7 +141,7 @@ export function placeMonster(state: SessionState, command: PlaceMonster, deps: D
 	const hp = rollHp(monster.hp, monster.level, monster.stats.c ?? 0, deps);
 	const placed: PlacedMonster = {
 		id: `${monster.label}${number}`,
-		name: localize(monster.name, dungeon.languages[0], dungeon.languages[0]),
+		name: localize(monster.name, sessionLanguage(state, dungeon), dungeon.languages[0]),
 		ac: monster.ac,
 		attacks: monster.attacks,
 		hp,

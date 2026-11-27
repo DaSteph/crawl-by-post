@@ -36,6 +36,7 @@
 	let startingCrawl = $state(false);
 	let switchingCombat = $state(false);
 	let savingTimeout = $state(false);
+	let savingLanguage = $state(false);
 	let moving = $state(false);
 	let moveForm: HTMLFormElement | undefined = $state();
 	let moveTarget = $state<Cell | null>(null);
@@ -615,6 +616,41 @@
 				</div>
 				{#if form?.timeoutError}
 					<p class="error" role="alert">{form.timeoutError}</p>
+				{/if}
+			</form>
+		</details>
+	</section>
+{/if}
+
+{#if visitor.role === 'gm' && mapView && mapView.languages.length > 1}
+	<section class="card">
+		<details open={Boolean(form?.languageError)}>
+			<summary><span>{text.language.settingsTitle}</span><span class="muted small">{text.language.name(mapView.language)}</span></summary>
+			<form
+				method="POST"
+				action="?/language"
+				class="stack-sm"
+				use:enhance={() => {
+					savingLanguage = true;
+					return async ({ update }) => {
+						await update({ reset: false });
+						savingLanguage = false;
+					};
+				}}
+			>
+				<p class="muted small">{text.language.settingsHint}</p>
+				<label for="language"><strong>{text.language.label}</strong></label>
+				<div class="row">
+					<select id="language" name="language" value={mapView.language}>
+						{#each mapView.languages as code (code)}
+							<option value={code}>{text.language.name(code)}</option>
+						{/each}
+					</select>
+					<button class="button" disabled={savingLanguage}>{text.language.save}</button>
+					{#if form?.languageSaved}<span class="muted small" role="status">{text.language.saved}</span>{/if}
+				</div>
+				{#if form?.languageError}
+					<p class="error" role="alert">{form.languageError}</p>
 				{/if}
 			</form>
 		</details>
