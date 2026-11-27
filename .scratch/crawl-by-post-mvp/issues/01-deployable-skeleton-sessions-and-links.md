@@ -16,4 +16,5 @@ This ticket also sets up the structure every later ticket builds on: a SvelteKit
 - [ ] A Docker image and Swarm stack file exist, with Traefik labels and Let's Encrypt, and a configurable Postgres connection
 - [ ] The app is installable as a PWA (manifest + service worker), with no offline mode
 - [ ] UI text lives in one place (English only)
+- [ ] Every page links to the source code repository (AGPL-3.0 section 13: network users must be offered the source)
 - [ ] The UI uses the system font stack and colour design tokens, with the dark variant ("chalk on slate") applied through `prefers-color-scheme`
