@@ -1,0 +1,164 @@
+/*
+ * Design tokens. Every colour is defined once here; the dark variant
+ * ("chalk on slate") redefines the same tokens via prefers-color-scheme.
+ */
+:root {
+	--font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+	--paper: #f7f6f1;
+	--surface: #ffffff;
+	--grid: #dde0e5;
+	--ink: #1f2328;
+	--ink-2: #5b6270;
+	--hatch: #a3a9b2;
+	--soft: #ecebe5;
+
+	/* Player token colours, one per seat, tuned per mode for contrast. */
+	--token-blue: #2f6fd6;
+	--token-purple: #8a4fd1;
+	--token-green: #2e8b57;
+	--token-magenta: #c03a7e;
+	--token-text: #ffffff;
+
+	--focus: var(--token-blue);
+	--radius: 10px;
+	--tap: 44px;
+
+	color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--paper: #24272c;
+		--surface: #2b2f35;
+		--grid: #353a41;
+		--ink: #e9e7e1;
+		--ink-2: #a3a9b3;
+		--hatch: #5f656e;
+		--soft: #30343a;
+
+		--token-blue: #7aa7ff;
+		--token-purple: #bb97f3;
+		--token-green: #63c990;
+		--token-magenta: #f08cc0;
+		--token-text: #15171a;
+
+		color-scheme: dark;
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--font);
+	line-height: 1.5;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+	padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+a {
+	color: inherit;
+	text-underline-offset: 3px;
+}
+
+h1,
+h2 {
+	line-height: 1.2;
+	text-wrap: balance;
+}
+
+button,
+input,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+input[type='text'],
+input[type='url'] {
+	width: 100%;
+	min-height: var(--tap);
+	padding: 8px 10px;
+	background: var(--surface);
+	border: 1.5px solid var(--ink);
+	border-radius: 8px;
+}
+
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--tap);
+	padding: 0 20px;
+	border-radius: var(--radius);
+	border: 2px solid var(--ink);
+	background: var(--ink);
+	color: var(--paper);
+	font-weight: 700;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.button.secondary {
+	background: transparent;
+	color: var(--ink);
+}
+
+.button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+:focus-visible {
+	outline: 3px solid var(--focus);
+	outline-offset: 2px;
+}
+
+.muted {
+	color: var(--ink-2);
+}
+
+.card {
+	border: 2px solid var(--ink);
+	border-radius: 14px;
+	background: var(--surface);
+	padding: 16px;
+}
+
+.token {
+	display: inline-grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	color: var(--token-text);
+	font-size: 0.75rem;
+	font-weight: 700;
+	flex: none;
+}
+.token.blue {
+	background: var(--token-blue);
+}
+.token.purple {
+	background: var(--token-purple);
+}
+.token.green {
+	background: var(--token-green);
+}
+.token.magenta {
+	background: var(--token-magenta);
+}

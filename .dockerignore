@@ -1,0 +1,12 @@
+node_modules
+build
+.svelte-kit
+.git
+.github
+.idea
+.scratch
+.env
+.env.*
+.envrc
+Dockerfile
+compose.dev.yaml
