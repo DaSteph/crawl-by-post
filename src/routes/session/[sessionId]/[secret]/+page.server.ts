@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import {
 	addPlayerSlot,
+	answerChallenge,
 	editInventory,
 	importCharacter,
 	loadSessionView,
@@ -8,10 +9,14 @@ import {
 	passSpotlight,
 	postAction,
 	postChat,
+	rollDamage,
 	setAreaRevealed,
+	setChallenge,
 	startCrawl
 } from '#lib/server/sessions.ts';
 import type { Danger } from '#lib/engine/turns.ts';
+import type { CheckChoice, Edge } from '#lib/engine/challenges.ts';
+import type { Ability } from '#lib/character/model.ts';
 import { text } from '#lib/text.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -75,10 +80,40 @@ export const actions: Actions = {
 		const text = String(form.get('text') ?? '');
 		const result =
 			form.get('as') === 'action'
-				? await postAction(params.sessionId, params.secret, text)
+				? await postAction(params.sessionId, params.secret, text, form.get('preConsent') === 'on')
 				: await postChat(params.sessionId, params.secret, text);
 		if (!result.ok) return fail(400, { postError: result.reason });
 		return { posted: true };
+	},
+
+	/**
+	 * `check` is `test:<ABILITY>` or `attack:<weapon index>`; `dc` is a quick pick,
+	 * overridden by `customDc` when that is filled in; `edge` is empty for neither.
+	 */
+	challenge: async ({ params, request }) => {
+		const form = await request.formData();
+		const [type, value] = String(form.get('check') ?? '').split(':');
+		const check: CheckChoice =
+			type === 'attack' ? { type: 'attack', weapon: Number(value) } : { type: 'test', ability: value as Ability };
+		const custom = String(form.get('customDc') ?? '').trim();
+		const dc = Number(custom || form.get('dc'));
+		const edgeValue = String(form.get('edge') ?? '');
+		const edge: Edge = edgeValue === 'advantage' || edgeValue === 'disadvantage' ? edgeValue : null;
+		const stakes = String(form.get('stakes') ?? '');
+		const result = await setChallenge(params.sessionId, params.secret, { check, dc, edge, stakes });
+		if (!result.ok) return fail(400, { challengeError: result.reason });
+	},
+
+	/** `answer` is `accept` or `decline`. */
+	answer: async ({ params, request }) => {
+		const accept = (await request.formData()).get('answer') === 'accept';
+		const result = await answerChallenge(params.sessionId, params.secret, accept);
+		if (!result.ok) return fail(400, { challengeError: result.reason });
+	},
+
+	damage: async ({ params }) => {
+		const result = await rollDamage(params.sessionId, params.secret);
+		if (!result.ok) return fail(400, { challengeError: result.reason });
 	},
 
 	pass: async ({ params }) => {

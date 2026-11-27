@@ -19,6 +19,7 @@ import { mapView, type MapView } from '#lib/engine/map.ts';
 import { people, type LogRecord, type Person } from '#lib/engine/log.ts';
 import type { Crawl, Danger, LogEntry } from '#lib/engine/turns.ts';
 import type { Cell, Dungeon } from '#lib/dungeon/model.ts';
+import type { CheckChoice, Edge } from '#lib/engine/challenges.ts';
 import { db } from './db.ts';
 import { loadDungeon } from './dungeons.ts';
 
@@ -126,8 +127,29 @@ export async function startCrawl(sessionId: string, bySecret: string, danger: Da
 	return run(sessionId, { type: 'startCrawl', by: bySecret, danger }, false);
 }
 
-export async function postAction(sessionId: string, bySecret: string, text: string): Promise<CommandResult> {
-	return run(sessionId, { type: 'postAction', by: bySecret, text }, false);
+export async function postAction(
+	sessionId: string,
+	bySecret: string,
+	text: string,
+	preConsent: boolean
+): Promise<CommandResult> {
+	return run(sessionId, { type: 'postAction', by: bySecret, text, preConsent }, false);
+}
+
+export async function setChallenge(
+	sessionId: string,
+	bySecret: string,
+	challenge: { check: CheckChoice; dc: number; edge: Edge; stakes: string }
+): Promise<CommandResult> {
+	return run(sessionId, { type: 'setChallenge', by: bySecret, ...challenge }, false);
+}
+
+export async function answerChallenge(sessionId: string, bySecret: string, accept: boolean): Promise<CommandResult> {
+	return run(sessionId, { type: accept ? 'acceptChallenge' : 'declineChallenge', by: bySecret }, false);
+}
+
+export async function rollDamage(sessionId: string, bySecret: string): Promise<CommandResult> {
+	return run(sessionId, { type: 'rollDamage', by: bySecret }, false);
 }
 
 export async function postChat(sessionId: string, bySecret: string, text: string): Promise<CommandResult> {

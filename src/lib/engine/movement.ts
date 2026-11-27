@@ -9,7 +9,7 @@
  */
 import { cellsOf, inRect, neighbour, type Cell, type Dungeon, type Exit } from '../dungeon/model.ts';
 import type { CommandResult, Deps, Position, SessionState } from './index.ts';
-import { spotlightHolder, type LogEntry } from './turns.ts';
+import type { LogEntry } from './turns.ts';
 
 export type MoveToken = { type: 'moveToken'; by: string; to: Cell; dungeon: Dungeon };
 export type SetAreaRevealed = {
@@ -22,6 +22,12 @@ export type SetAreaRevealed = {
 
 /** The way into an unknown area: `doorway` is the known side, `beyond` the first unknown square. */
 export type Doorway = { area: string; doorway: Position; beyond: Cell };
+
+/** Moving is part of a player's own action, not of accepting a challenge or rolling damage. */
+function canMove(state: SessionState, seat: number): boolean {
+	const s = state.crawl?.spotlight;
+	return s?.kind === 'player' && s.seat === seat;
+}
 
 const key = (c: Cell) => `${c.x},${c.y}`;
 const same = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y;
@@ -106,7 +112,7 @@ export type Moves = {
 /** Where the player in `seat` can move right now, or null when it isn't their move. */
 export function movesFor(state: SessionState, dungeon: Dungeon, seat: number): Moves | null {
 	const player = state.players.find((p) => p.seat === seat);
-	if (!player?.position || spotlightHolder(state) !== seat) return null;
+	if (!player?.position || !canMove(state, seat)) return null;
 	const reach = reachableFrom(state, dungeon, player.position);
 	const taken = occupied(state, seat);
 	return {
@@ -129,7 +135,7 @@ export function moveToken(state: SessionState, command: MoveToken, deps: Deps): 
 	if (!player) return { ok: false, reason: 'Only players can move a token.' };
 	if (!player.position) return { ok: false, reason: 'Import your character first.' };
 	if (!state.crawl) return { ok: false, reason: 'The crawl hasn’t started yet.' };
-	if (spotlightHolder(state) !== player.seat) return { ok: false, reason: 'You can only move on your turn.' };
+	if (!canMove(state, player.seat)) return { ok: false, reason: 'You can only move on your turn.' };
 
 	const { dungeon, to } = command;
 	const reach = reachableFrom(state, dungeon, player.position);

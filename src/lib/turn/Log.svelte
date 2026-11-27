@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { groupLog, LONG_POST, type LogRecord, type Person } from '#lib/engine/log.ts';
 	import { text } from '#lib/text.ts';
+	import { describeCheck } from './describe.ts';
 
 	let {
 		log,
@@ -94,6 +95,37 @@
 				<p class="ok">{text.log.goesFirst(nameOf(e.winner))}</p>
 			</div>
 		</li>
+	{:else if e.kind === 'challenge'}
+		<li class="entry">
+			{@render who('gm')}
+			<div>
+				<span class="meta">{text.log.challenge(nameOf(e.seat))}</span>
+				<p class="text"><strong>{describeCheck(e.check)} · {text.challenge.dcLabel} {e.dc}</strong>{#if e.edge} · {text.challenge.edgeNote[e.edge]}{/if}</p>
+				{#if e.stakes}<p class="text stakes">{e.stakes}</p>{/if}
+			</div>
+		</li>
+	{:else if e.kind === 'roll'}
+		<li class="entry">
+			<span class="who gm" aria-hidden="true">d20</span>
+			<div class="roll">
+				<strong>{text.log.roll(nameOf(e.seat))} · {describeCheck(e.check)}</strong>
+				<p class="num">
+					{text.log.d20s(e.d20s, e.d20)}{#if e.edge} ({text.challenge.edgeNote[e.edge]}){/if}
+					{text.log.modifier(e.modifier)} {text.log.total(e.total, e.dc)}
+				</p>
+				<p class="ok">{e.success ? `✓ ${text.log.success}` : `✗ ${text.log.failure}`}</p>
+			</div>
+		</li>
+	{:else if e.kind === 'damage'}
+		<li class="entry">
+			<span class="who gm" aria-hidden="true">dmg</span>
+			<div class="roll">
+				<strong>{text.log.damage(nameOf(e.seat), e.weapon)}</strong>
+				<p class="num">{text.log.damageLine(e.formula, e.rolls, e.total)}</p>
+			</div>
+		</li>
+	{:else if e.kind === 'declined'}
+		<li class="event">{text.log.declined(nameOf(e.seat))}</li>
 	{:else if e.kind === 'crawlStarted'}
 		<li class="event">{text.log.crawlStarted(text.crawl.dangers[e.danger])}</li>
 	{:else if e.kind === 'pass'}
@@ -223,6 +255,11 @@
 	.winner,
 	.ok {
 		font-weight: 700;
+	}
+	.stakes {
+		border-left: 3px solid var(--ink);
+		padding-left: 10px;
+		font-style: italic;
 	}
 	.event.revealed {
 		font-style: normal;

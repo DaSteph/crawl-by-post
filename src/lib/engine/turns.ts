@@ -3,6 +3,7 @@
  * posts that move the spotlight on (actions, GM responses, passes) or don't (chat).
  */
 import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts';
+import type { Challenge, ChallengeEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
 
 export const DANGER_LEVELS = ['unsafe', 'risky', 'deadly'] as const;
 export type Danger = (typeof DANGER_LEVELS)[number];
@@ -16,8 +17,17 @@ export const POST_LIMITS = {
 	gm: { show: 400, over: 600 }
 } as const;
 
-/** A GM turn sits between every two player turns; `afterSeat` is the player who just acted. */
-export type Spotlight = { kind: 'player'; seat: number } | { kind: 'gm'; afterSeat: number };
+/**
+ * A GM turn sits between every two player turns; `afterSeat` is the player who
+ * just acted, and `preConsent` is set when they ticked "I'll roll whatever you set".
+ * `challenge` and `damage` are short player turns to accept a challenge or roll
+ * damage after a hit; they hand the spotlight back to the GM.
+ */
+export type Spotlight =
+	| { kind: 'player'; seat: number }
+	| { kind: 'gm'; afterSeat: number; preConsent?: true }
+	| { kind: 'challenge'; seat: number; challenge: Challenge }
+	| { kind: 'damage'; seat: number; weapon: WeaponRef };
 
 export type Crawl = {
 	danger: Danger;
@@ -50,10 +60,16 @@ export type LogEntry = { at: string } & (
 	/** A token stopped at the doorway of an unknown area. Which area stays secret. */
 	| { kind: 'doorway'; seat: number }
 	| { kind: 'revealed'; areaId: string }
+	| ChallengeEntry
+	| RollEntry
+	/** The player backed out of a challenge. */
+	| { kind: 'declined'; seat: number }
+	| DamageEntry
 );
 
 export type StartCrawl = { type: 'startCrawl'; by: string; danger: Danger };
-export type PostAction = { type: 'postAction'; by: string; text: string };
+/** `preConsent`: "I'll roll whatever you set". Only means something on a player's action. */
+export type PostAction = { type: 'postAction'; by: string; text: string; preConsent?: boolean };
 export type PostChat = { type: 'postChat'; by: string; text: string };
 export type PassSpotlight = { type: 'passSpotlight'; by: string };
 
@@ -150,6 +166,8 @@ export function postAction(state: SessionState, command: PostAction, deps: Deps)
 	if (spotlightHolder(state) !== who) {
 		return { ok: false, reason: 'It’s not your turn any more. Your text is still in the box; post it as chat.' };
 	}
+	if (crawl.spotlight.kind === 'challenge') return { ok: false, reason: 'Accept or back out of the challenge first.' };
+	if (crawl.spotlight.kind === 'damage') return { ok: false, reason: 'Roll your damage first.' };
 	const text = cleanText(command.text);
 	if (!text.ok) return text;
 	const at = deps.now().toISOString();
@@ -162,7 +180,9 @@ export function postAction(state: SessionState, command: PostAction, deps: Deps)
 	}
 
 	const seat = crawl.spotlight.seat;
-	const spotlight: Spotlight = { kind: 'gm', afterSeat: seat };
+	const spotlight: Spotlight = command.preConsent
+		? { kind: 'gm', afterSeat: seat, preConsent: true }
+		: { kind: 'gm', afterSeat: seat };
 	return {
 		ok: true,
 		state: { ...state, crawl: { ...crawl, spotlight } },

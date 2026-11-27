@@ -1,6 +1,6 @@
 /**
- * Dice formulas such as `2d6`, `d8`, `1d6+1` or a plain number.
- * Parsing only for now; rolling arrives with the dice evaluator (ticket 06).
+ * Dice formulas such as `2d6`, `d8`, `1d6+1` or a plain number: parsing,
+ * formatting and rolling with an injected roller.
  */
 
 /** `count` dice with `sides` sides plus `modifier`. A plain number has count 0. */
@@ -28,4 +28,16 @@ export function formatDice(f: DiceFormula): string {
 	if (f.count === 0) return String(f.modifier);
 	const mod = f.modifier === 0 ? '' : f.modifier > 0 ? `+${f.modifier}` : String(f.modifier);
 	return `${f.count}d${f.sides}${mod}`;
+}
+
+/** One die roller: returns 1..sides. The engine's `Deps.dice`. */
+export type Roller = (sides: number) => number;
+
+/** Every die rolled, in order, plus the formula's modifier and the sum of both. */
+export type DiceRoll = { rolls: number[]; modifier: number; total: number };
+
+export function rollDice(formula: DiceFormula, roller: Roller): DiceRoll {
+	const rolls = Array.from({ length: formula.count }, () => roller(formula.sides));
+	const total = rolls.reduce((sum, r) => sum + r, formula.modifier);
+	return { rolls, modifier: formula.modifier, total };
 }

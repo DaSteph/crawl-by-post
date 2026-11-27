@@ -8,6 +8,7 @@
 		sessionId,
 		me,
 		holder,
+		acting,
 		serverError
 	}: {
 		sessionId: string;
@@ -15,10 +16,13 @@
 		me: 'gm' | number;
 		/** Who holds the spotlight, or null outside a crawl. */
 		holder: 'gm' | number | null;
+		/** True when the visitor's turn is a post (not accepting a challenge or rolling damage). */
+		acting: boolean;
 		serverError: string | null;
 	} = $props();
 
-	const myTurn = $derived(holder !== null && holder === me);
+	const myTurn = $derived(acting);
+	let preConsent = $state(false);
 	const limits = $derived(me === 'gm' ? POST_LIMITS.gm : POST_LIMITS.player);
 	// The secret stays out of the key; the draft is per session and seat.
 	const draftKey = $derived(`draft:${sessionId}:${me}`);
@@ -93,12 +97,13 @@
 			if (result.type === 'success' && !isPass) {
 				draft = '';
 				save('');
+				preConsent = false;
 			}
 			await update({ reset: false });
 		};
 	}}
 >
-	{#if holder !== null && !myTurn}
+	{#if holder !== null && holder !== me}
 		<p class="warning small" id="compose-hint">{text.compose.outOfTurn}</p>
 	{/if}
 	<textarea
@@ -106,12 +111,18 @@
 		rows="3"
 		maxlength={MAX_POST_LENGTH}
 		aria-label={text.compose.label}
-		aria-describedby={holder !== null && !myTurn ? 'compose-hint' : undefined}
+		aria-describedby={holder !== null && holder !== me ? 'compose-hint' : undefined}
 		{placeholder}
 		bind:value={draft}
 		bind:this={textarea}
 		{oninput}
 	></textarea>
+	{#if myTurn && me !== 'gm'}
+		<label class="consent">
+			<input type="checkbox" name="preConsent" bind:checked={preConsent} aria-describedby="consent-hint" />
+			<span>{text.challenge.preConsent} <span class="hint" id="consent-hint">· {text.challenge.preConsentHint}</span></span>
+		</label>
+	{/if}
 	<div class="row">
 		{#if length >= limits.show}
 			<span class="count" class:over aria-live="polite">
@@ -185,6 +196,23 @@
 	.over {
 		color: var(--over);
 		font-weight: 700;
+	}
+	.consent {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: var(--tap);
+		font-size: 0.9rem;
+	}
+	.consent input {
+		width: 20px;
+		height: 20px;
+		flex: none;
+		accent-color: var(--ink);
+	}
+	.hint {
+		color: var(--ink-2);
+		font-size: 0.8rem;
 	}
 	.warning {
 		font-style: italic;

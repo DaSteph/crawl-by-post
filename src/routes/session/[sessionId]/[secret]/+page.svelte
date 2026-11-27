@@ -8,6 +8,8 @@
 	import { DANGER_LEVELS } from '#lib/engine/turns.ts';
 	import Compose from '#lib/turn/Compose.svelte';
 	import Log from '#lib/turn/Log.svelte';
+	import ChallengeForm from '#lib/turn/ChallengeForm.svelte';
+	import ChallengePrompt from '#lib/turn/ChallengePrompt.svelte';
 	import CopyLink from '#lib/CopyLink.svelte';
 	import CharacterCard from '#lib/character/CharacterCard.svelte';
 	import { MAX_INVENTORY_LENGTH, MAX_PLAYERS } from '#lib/engine/index.ts';
@@ -61,6 +63,15 @@
 	const me = $derived(visitor.role === 'gm' ? 'gm' : visitor.role === 'player' ? visitor.seat : null);
 	const crawl = $derived(data.crawl);
 	const holder = $derived(crawl ? (crawl.spotlight.kind === 'gm' ? 'gm' : crawl.spotlight.seat) : null);
+	const spotlight = $derived(crawl?.spotlight ?? null);
+	/** True when the visitor's turn is a post, not accepting a challenge or rolling damage. */
+	const acting = $derived(
+		(spotlight?.kind === 'player' && spotlight.seat === me) || (spotlight?.kind === 'gm' && me === 'gm')
+	);
+	/** GM: the character a challenge would go to, in the GM's turn. */
+	const challengeSheet = $derived(
+		visitor.role === 'gm' && spotlight?.kind === 'gm' ? (sheetBySeat.get(spotlight.afterSeat) ?? null) : null
+	);
 	const nameOf = (seat: number) => data.people.find((p) => p.seat === seat)?.name ?? text.session.player(seat);
 	const turnLine = $derived.by(() => {
 		if (holder === null) return null;
@@ -231,11 +242,33 @@
 {#if me !== null}
 	<section class="card stack">
 		<Log log={data.log} people={data.people} {areaName} />
+		{#if spotlight?.kind === 'challenge' || spotlight?.kind === 'damage'}
+			<ChallengePrompt
+				pending={spotlight}
+				mine={spotlight.seat === me}
+				name={nameOf(spotlight.seat)}
+				error={form?.challengeError ?? null}
+			/>
+		{/if}
+		{#if challengeSheet && spotlight?.kind === 'gm'}
+			<details class="challenge" open={spotlight.preConsent ?? false}>
+				<summary>
+					<span>{text.challenge.title}</span>
+					{#if spotlight.preConsent}<span class="muted small">{text.challenge.preConsent}</span>{/if}
+				</summary>
+				<ChallengeForm
+					sheet={challengeSheet}
+					preConsent={spotlight.preConsent ?? false}
+					error={form?.challengeError ?? null}
+				/>
+			</details>
+		{/if}
 		<Compose
 			bind:this={compose}
 			sessionId={page.params.sessionId!}
 			{me}
 			{holder}
+			{acting}
 			serverError={form?.postError ?? null}
 		/>
 	</section>
@@ -545,6 +578,11 @@
 		height: 20px;
 		accent-color: var(--ink);
 		flex: none;
+	}
+	.challenge {
+		border: 2px solid var(--ink);
+		border-radius: var(--radius);
+		padding: 0 12px 12px;
 	}
 	.mood {
 		border-left: 3px solid var(--ink);

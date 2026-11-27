@@ -21,6 +21,16 @@ import {
 	type StartCrawl
 } from './turns.ts';
 import { moveToken, setAreaRevealed, type MoveToken, type SetAreaRevealed } from './movement.ts';
+import {
+	acceptChallenge,
+	declineChallenge,
+	rollDamageCommand,
+	setChallenge,
+	type AcceptChallenge,
+	type DeclineChallenge,
+	type RollDamage,
+	type SetChallenge
+} from './challenges.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -87,7 +97,11 @@ export type Command =
 	| PostChat
 	| PassSpotlight
 	| MoveToken
-	| SetAreaRevealed;
+	| SetAreaRevealed
+	| SetChallenge
+	| AcceptChallenge
+	| DeclineChallenge
+	| RollDamage;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -159,6 +173,14 @@ export function applyCommand(
 			return moveToken(state, command, deps);
 		case 'setAreaRevealed':
 			return setAreaRevealed(state, command, deps);
+		case 'setChallenge':
+			return setChallenge(state, command, deps);
+		case 'acceptChallenge':
+			return acceptChallenge(state, command, deps);
+		case 'declineChallenge':
+			return declineChallenge(state, command, deps);
+		case 'rollDamage':
+			return rollDamageCommand(state, command, deps);
 	}
 }
 
