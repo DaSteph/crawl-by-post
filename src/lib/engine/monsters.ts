@@ -39,7 +39,11 @@ export type HpTarget = { kind: 'monster'; id: string } | { kind: 'player'; seat:
 /** Damage waiting for the GM: `amount` comes off `target`'s HP once confirmed. */
 export type HpChange = { id: number; target: HpTarget; amount: number };
 
-export type PlaceMonster = { type: 'placeMonster'; by: string; areaId: string; index: number; dungeon: Dungeon };
+/**
+ * Places the area's monster `index` in that area, or with `wandering` the
+ * dungeon's wandering monster `index` in whichever area the GM picks.
+ */
+export type PlaceMonster = { type: 'placeMonster'; by: string; areaId: string; index: number; wandering?: boolean; dungeon: Dungeon };
 export type MoveMonster = { type: 'moveMonster'; by: string; id: string; to: Cell; dungeon: Dungeon };
 export type RemoveMonster = { type: 'removeMonster'; by: string; id: string };
 export type SetMonsterHp = { type: 'setMonsterHp'; by: string; id: string; hp: number; maxHp: number };
@@ -120,8 +124,10 @@ export function placeMonster(state: SessionState, command: PlaceMonster, deps: D
 	const { dungeon } = command;
 	const area = dungeon.areas.find((a) => a.id === command.areaId);
 	if (!area) return { ok: false, reason: 'That area isn’t in the dungeon.' };
-	const monster = area.monsters[command.index];
-	if (!monster) return { ok: false, reason: 'That monster isn’t listed for this area.' };
+	const monster = command.wandering ? dungeon.wandering[command.index] : area.monsters[command.index];
+	if (!monster) {
+		return { ok: false, reason: command.wandering ? 'That wandering monster isn’t in the dungeon.' : 'That monster isn’t listed for this area.' };
+	}
 
 	const taken = occupiedCells(state);
 	const cell = cellsOf(area.rect).find((c) => !taken.has(key(c)));

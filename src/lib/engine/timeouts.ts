@@ -150,7 +150,9 @@ export function resolveTimeout(state: SessionState, command: ResolveTimeout, dep
 		}
 
 		case 'skip': {
-			const spotlight: Spotlight = { kind: 'gm', afterSeat: seat };
+			// A skipped challenge goes back to the GM turn it came from (not always the challenged player's).
+			const afterSeat = crawl.spotlight.kind === 'challenge' ? (crawl.spotlight.challenge.returnTo ?? seat) : seat;
+			const spotlight: Spotlight = { kind: 'gm', afterSeat };
 			const events: EngineEvent[] = [decided, { type: 'spotlightChanged', spotlight }];
 			// A skipped action turn is a completed player action; a skipped challenge or damage roll is not.
 			if (crawl.spotlight.kind === 'player') events.push({ type: 'playerActionCompleted', seat });

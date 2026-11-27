@@ -24,10 +24,24 @@ export type Edge = 'advantage' | 'disadvantage' | null;
 /** The weapon as it stood when the challenge was set, so a later re-import can't change the roll. */
 export type WeaponRef = { name: string; attackBonus: number; damage: DiceFormula };
 
-/** `target` is the monster attacked, whose AC is the DC. Absent when the GM set the DC by hand. */
-export type Check = { type: 'test'; ability: Ability } | { type: 'attack'; weapon: WeaponRef; target?: MonsterRef };
+/**
+ * A plain die roll the player commits to, with no ability, DC or advantage:
+ * a result of `on` or lower triggers it. A wandering monster check is 1d6 on 1.
+ */
+export type CommittedRoll = { type: 'committedRoll'; purpose: 'wandering'; sides: number; on: number };
 
-export type Challenge = { seat: number; check: Check; dc: number; edge: Edge; stakes: string };
+/** `target` is the monster attacked, whose AC is the DC. Absent when the GM set the DC by hand. */
+export type Check =
+	| { type: 'test'; ability: Ability }
+	| { type: 'attack'; weapon: WeaponRef; target?: MonsterRef }
+	| CommittedRoll;
+
+/**
+ * `dc` and `edge` mean nothing for a committed roll (0 and null). `returnTo` is
+ * the GM turn to go back to when the challenge went to someone other than the
+ * player who just acted (a wandering monster check); absent means `seat`.
+ */
+export type Challenge = { seat: number; check: Check; dc: number; edge: Edge; stakes: string; returnTo?: number };
 
 /**
  * What the GM picks in the form. `weapon` is an index into the character's weapons;
@@ -64,6 +78,15 @@ export type RollEntry = {
 	success: boolean;
 };
 
+/** A committed roll, locked into the log. `triggered` when the die showed `on` or lower. */
+export type CommittedRollEntry = {
+	kind: 'committedRoll';
+	seat: number;
+	roll: CommittedRoll;
+	result: number;
+	triggered: boolean;
+};
+
 export type DamageEntry = {
 	kind: 'damage';
 	seat: number;
@@ -80,6 +103,10 @@ const logged = (entry: LogEntry): EngineEvent => ({ type: 'logged', entry });
 
 function roll(state: SessionState, challenge: Challenge, deps: Deps, at: string): { entry: LogEntry; hit: boolean } {
 	const { check, edge, dc, seat } = challenge;
+	if (check.type === 'committedRoll') {
+		const result = deps.dice(check.sides);
+		return { entry: { at, kind: 'committedRoll', seat, roll: check, result, triggered: result <= check.on }, hit: false };
+	}
 	const d20s = edge ? [deps.dice(20), deps.dice(20)] : [deps.dice(20)];
 	const d20 = edge === 'advantage' ? Math.max(...d20s) : edge === 'disadvantage' ? Math.min(...d20s) : d20s[0];
 	const character = state.players.find((p) => p.seat === seat)!.character!;
@@ -162,17 +189,30 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 		};
 	}
 
-	const challenge: Challenge = { seat, check, dc, edge, stakes };
+	return askChallenge(state, { seat, check, dc, edge, stakes }, deps);
+}
+
+/** The GM turn a challenge hands back to once it's rolled or declined. */
+const backToGm = (challenge: Challenge): Spotlight => ({ kind: 'gm', afterSeat: challenge.returnTo ?? challenge.seat });
+
+/**
+ * Puts a challenge to a player in the GM's turn. When the player who just acted
+ * ticked pre-consent and the challenge is theirs, it rolls right away;
+ * otherwise the player sees it first and accepts or backs out.
+ */
+export function askChallenge(state: SessionState, challenge: Challenge, deps: Deps): CommandResult {
+	const spotlight = state.crawl!.spotlight;
+	const preConsented = spotlight.kind === 'gm' && spotlight.preConsent && challenge.seat === spotlight.afterSeat;
 	const at = deps.now().toISOString();
 	const events: EngineEvent[] = [logged({ at, kind: 'challenge', ...challenge })];
 
-	if (!spotlight.preConsent) {
-		// The player sees the DC and stakes first, then accepts or backs out.
-		const next: Spotlight = { kind: 'challenge', seat, challenge };
+	if (!preConsented) {
+		const next: Spotlight = { kind: 'challenge', seat: challenge.seat, challenge };
 		return { ok: true, state: withSpotlight(state, next), events: [...events, { type: 'spotlightChanged', spotlight: next }] };
 	}
 
 	// Pre-consent covers this one challenge: roll now (and the damage on a hit), and the GM's turn goes on.
+	const { check, seat } = challenge;
 	const result = roll(state, challenge, deps, at);
 	events.push(logged(result.entry));
 	let next = state;
@@ -181,7 +221,7 @@ export function setChallenge(state: SessionState, command: SetChallenge, deps: D
 		next = rolled.state;
 		events.push(...rolled.events);
 	}
-	return { ok: true, state: withSpotlight(next, { kind: 'gm', afterSeat: seat }), events };
+	return { ok: true, state: withSpotlight(next, backToGm(challenge)), events };
 }
 
 function challengedPlayer(state: SessionState, by: string) {
@@ -209,7 +249,7 @@ export function acceptChallenge(state: SessionState, command: AcceptChallenge, d
 					weapon: challenge.check.weapon,
 					...(challenge.check.target ? { target: challenge.check.target } : {})
 				}
-			: { kind: 'gm', afterSeat: challenge.seat };
+			: backToGm(challenge);
 	return {
 		ok: true,
 		state: withSpotlight(state, next),
@@ -221,7 +261,7 @@ export function declineChallenge(state: SessionState, command: DeclineChallenge,
 	const found = challengedPlayer(state, command.by);
 	if (!found.ok) return found;
 	const seat = found.spotlight.seat;
-	const next: Spotlight = { kind: 'gm', afterSeat: seat };
+	const next = backToGm(found.spotlight.challenge);
 	return {
 		ok: true,
 		state: withSpotlight(state, next),

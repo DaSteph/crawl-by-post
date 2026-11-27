@@ -205,6 +205,27 @@ export const text = {
 		timedOut: 'timed out: the GM decides'
 	},
 
+	wandering: {
+		due: 'Wandering monster check due',
+		postponed: 'Wandering monster check postponed',
+		dueIntro: (name: string) => `${name} rolls 1d6 for it. On a 1, a wandering monster turns up.`,
+		postponedIntro: 'It comes back when this round completes. You can still set it now.',
+		notYourTurn: 'You can set it in your turn. Postponing or skipping works any time.',
+		whoLabel: 'Who rolls',
+		next: 'next',
+		set: (name: string) => `Set check for ${name}`,
+		setRoll: (name: string) => `Set check, ${name} rolls now`,
+		postpone: 'Postpone',
+		skip: 'Skip',
+		badDecision: 'Pick set, postpone or skip.',
+		checkName: 'Wandering monster check (1d6)',
+		rollHint: 'Roll 1d6. On a 1, a wandering monster turns up. The result is locked in the log.',
+		placeTitle: 'Wandering monsters',
+		placeHint: 'From the dungeon file. Placed on the first free square of the area you pick.',
+		areaLabel: 'Area',
+		place: (name: string) => `Place ${name}`
+	},
+
 	timeout: {
 		title: (name: string) => `${name}’s turn timed out`,
 		intro: 'An absent player is a ruling, not a punishment. You decide what happens.',
@@ -292,6 +313,9 @@ export const text = {
 		hideChat: 'Hide chat',
 		challenge: (name: string) => `Challenge for ${name}`,
 		roll: (name: string) => `${name} rolls`,
+		committedRollLine: (sides: number, result: number) => `d${sides} ${result}`,
+		wanderingMonster: 'A wandering monster turns up!',
+		noWanderingMonster: 'Nothing turns up.',
 		d20s: (rolls: number[], kept: number) =>
 			rolls.length > 1 ? `d20 ${rolls.join(' / ')} → ${kept}` : `d20 ${kept}`,
 		modifier: (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)}`,

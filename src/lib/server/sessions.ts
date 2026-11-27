@@ -211,8 +211,22 @@ export async function setAreaRevealed(
 	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setAreaRevealed', by: bySecret, areaId, revealed, dungeon }));
 }
 
-export async function placeMonster(sessionId: string, bySecret: string, areaId: string, index: number): Promise<CommandResult> {
-	return runWithDungeon(sessionId, (dungeon) => ({ type: 'placeMonster', by: bySecret, areaId, index, dungeon }));
+/** With `wandering`, `index` is one of the dungeon's wandering monsters, placed in `areaId`. */
+export async function placeMonster(
+	sessionId: string,
+	bySecret: string,
+	areaId: string,
+	index: number,
+	wandering = false
+): Promise<CommandResult> {
+	return runWithDungeon(sessionId, (dungeon) => ({
+		type: 'placeMonster',
+		by: bySecret,
+		areaId,
+		index,
+		...(wandering ? { wandering } : {}),
+		dungeon
+	}));
 }
 
 export async function moveMonster(sessionId: string, bySecret: string, id: string, to: Cell): Promise<CommandResult> {
@@ -275,6 +289,16 @@ export async function setAreaLight(
 	light: AreaLight | null
 ): Promise<CommandResult> {
 	return runWithDungeon(sessionId, (dungeon) => ({ type: 'setAreaLight', by: bySecret, areaId, light, dungeon }));
+}
+
+export type WanderingDecision = { decision: 'set'; seat?: number } | { decision: 'postpone' } | { decision: 'skip' };
+
+export async function decideWanderingCheck(sessionId: string, bySecret: string, d: WanderingDecision): Promise<CommandResult> {
+	const command: Command =
+		d.decision === 'set'
+			? { type: 'setWanderingCheck', by: bySecret, ...(d.seat ? { seat: d.seat } : {}) }
+			: { type: d.decision === 'postpone' ? 'postponeWanderingCheck' : 'skipWanderingCheck', by: bySecret };
+	return run(sessionId, command, false);
 }
 
 /** How much of the log a page load brings. Older entries stay in the database. */

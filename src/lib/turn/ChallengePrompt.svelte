@@ -35,7 +35,11 @@
 		{@const c = pending.challenge}
 		<strong>{mine ? t.yourChallenge : t.waiting(name)}</strong>
 		<p class="check">
-			{describeCheck(c.check)} · {text.challenge.dcLabel} {c.dc}{#if c.edge} · {t.edgeNote[c.edge]}{/if}
+			{#if c.check.type === 'committedRoll'}
+				{describeCheck(c.check)}
+			{:else}
+				{describeCheck(c.check)} · {text.challenge.dcLabel} {c.dc}{#if c.edge} · {t.edgeNote[c.edge]}{/if}
+			{/if}
 		</p>
 		{#if c.stakes}<p class="stakes">{c.stakes}</p>{/if}
 		{#if mine}
@@ -43,7 +47,7 @@
 				<button class="button secondary" name="answer" value="decline" disabled={busy}>{t.decline}</button>
 				<button class="button" name="answer" value="accept" disabled={busy}>{t.accept}</button>
 			</form>
-			<p class="muted small">{t.acceptHint}</p>
+			<p class="muted small">{c.check.type === 'committedRoll' ? text.wandering.rollHint : t.acceptHint}</p>
 		{/if}
 	{:else}
 		<strong>{mine ? t.hit : t.waitingDamage(name)}</strong>

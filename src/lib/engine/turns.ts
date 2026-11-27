@@ -3,7 +3,8 @@
  * posts that move the spotlight on (actions, GM responses, passes) or don't (chat).
  */
 import type { CommandResult, Deps, EngineEvent, SessionState } from './index.ts';
-import type { Challenge, ChallengeEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
+import type { Challenge, ChallengeEntry, CommittedRollEntry, DamageEntry, RollEntry, WeaponRef } from './challenges.ts';
+import type { WanderingCheck } from './wandering.ts';
 import type { TimeoutEntry } from './timeouts.ts';
 import type { MonsterEntry, MonsterRef } from './monsters.ts';
 import type { LightEntry } from './light.ts';
@@ -39,6 +40,8 @@ export type Crawl = {
 	/** Starts at 1 and goes up each time the spotlight returns to `order[0]`. */
 	round: number;
 	spotlight: Spotlight;
+	/** A wandering monster check waiting for the GM. */
+	wanderingCheck?: WanderingCheck;
 };
 
 export type InitiativeRoll = { seat: number; d20: number; modifier: number; total: number };
@@ -66,6 +69,7 @@ export type LogEntry = { at: string } & (
 	| { kind: 'revealed'; areaId: string }
 	| ChallengeEntry
 	| RollEntry
+	| CommittedRollEntry
 	/** The player backed out of a challenge. */
 	| { kind: 'declined'; seat: number }
 	| DamageEntry

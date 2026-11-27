@@ -79,6 +79,8 @@ export type MapView = {
 	monsters: MapMonsterToken[];
 	unknown: MapUnknown[];
 	lights: MapLight[];
+	/** The dungeon's wandering monsters, which the GM can place anywhere. Empty for players. */
+	wandering: MapMonster[];
 	/** Where the viewer can move their token now; null unless they hold the spotlight. */
 	moves: Moves | null;
 };
@@ -160,7 +162,11 @@ export function mapView(state: SessionState, dungeon: Dungeon, role: 'gm' | 'pla
 		counter: gm ? light.counter : null
 	}));
 
-	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, lights, moves };
+	const wandering: MapMonster[] = gm
+		? dungeon.wandering.map((m, index) => ({ index, label: m.label, name: t(m.name)!, count: formatDice(m.count) }))
+		: [];
+
+	return { dungeonName: t(dungeon.name)!, areas, exits, tokens, monsters, unknown, lights, wandering, moves };
 }
 
 /** Players see exits of revealed areas; a secret one only once both its sides are revealed (found). */

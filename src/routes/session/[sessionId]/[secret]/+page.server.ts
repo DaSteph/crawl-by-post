@@ -24,7 +24,8 @@ import {
 	setChallenge,
 	setLightCounter,
 	setTurnTimeout,
-	startCrawl
+	startCrawl,
+	decideWanderingCheck
 } from '#lib/server/sessions.ts';
 import type { Danger } from '#lib/engine/turns.ts';
 import type { TimeoutResolution } from '#lib/engine/timeouts.ts';
@@ -151,6 +152,22 @@ export const actions: Actions = {
 		if (!result.ok) return fail(400, { resolveError: result.reason });
 	},
 
+	/** `decision` is `set` (for player `seat`, or the next one when empty), `postpone` or `skip`. */
+	wanderingCheck: async ({ params, request }) => {
+		const form = await request.formData();
+		const decision = form.get('decision');
+		const seat = Number(form.get('seat')) || undefined;
+		if (decision !== 'set' && decision !== 'postpone' && decision !== 'skip') {
+			return fail(400, { wanderingError: text.wandering.badDecision });
+		}
+		const result = await decideWanderingCheck(
+			params.sessionId,
+			params.secret,
+			decision === 'set' ? { decision, seat } : { decision }
+		);
+		if (!result.ok) return fail(400, { wanderingError: result.reason });
+	},
+
 	pass: async ({ params }) => {
 		const result = await passSpotlight(params.sessionId, params.secret);
 		if (!result.ok) return fail(400, { postError: result.reason });
@@ -168,8 +185,9 @@ export const actions: Actions = {
 	placeMonster: async ({ params, request }) => {
 		const form = await request.formData();
 		const areaId = String(form.get('area') ?? '');
-		const result = await placeMonster(params.sessionId, params.secret, areaId, Number(form.get('index')));
-		if (!result.ok) return fail(400, { monsterError: result.reason });
+		const wandering = form.get('wandering') === '1';
+		const result = await placeMonster(params.sessionId, params.secret, areaId, Number(form.get('index')), wandering);
+		if (!result.ok) return fail(400, wandering ? { wanderingPlaceError: result.reason } : { monsterError: result.reason });
 	},
 
 	moveMonster: async ({ params, request }) => {

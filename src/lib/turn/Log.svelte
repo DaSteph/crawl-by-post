@@ -103,7 +103,11 @@
 			{@render who('gm')}
 			<div>
 				<span class="meta">{text.log.challenge(nameOf(e.seat))}</span>
-				<p class="text"><strong>{describeCheck(e.check)} · {text.challenge.dcLabel} {e.dc}</strong>{#if e.edge} · {text.challenge.edgeNote[e.edge]}{/if}</p>
+				{#if e.check.type === 'committedRoll'}
+					<p class="text"><strong>{describeCheck(e.check)}</strong></p>
+				{:else}
+					<p class="text"><strong>{describeCheck(e.check)} · {text.challenge.dcLabel} {e.dc}</strong>{#if e.edge} · {text.challenge.edgeNote[e.edge]}{/if}</p>
+				{/if}
 				{#if e.stakes}<p class="text stakes">{e.stakes}</p>{/if}
 			</div>
 		</li>
@@ -117,6 +121,15 @@
 					{text.log.modifier(e.modifier)} {text.log.total(e.total, e.dc)}
 				</p>
 				<p class="ok">{e.success ? `✓ ${text.log.success}` : `✗ ${text.log.failure}`}</p>
+			</div>
+		</li>
+	{:else if e.kind === 'committedRoll'}
+		<li class="entry">
+			<span class="who gm" aria-hidden="true">d{e.roll.sides}</span>
+			<div class="roll">
+				<strong>{text.log.roll(nameOf(e.seat))} · {describeCheck(e.roll)}</strong>
+				<p class="num">{text.log.committedRollLine(e.roll.sides, e.result)}</p>
+				<p class="ok">{e.triggered ? `! ${text.log.wanderingMonster}` : text.log.noWanderingMonster}</p>
 			</div>
 		</li>
 	{:else if e.kind === 'damage'}

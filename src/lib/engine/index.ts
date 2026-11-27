@@ -75,6 +75,15 @@ import {
 	type SetAreaLight,
 	type SetLightCounter
 } from './light.ts';
+import {
+	postponeWanderingCheck,
+	setWanderingCheck,
+	skipWanderingCheck,
+	watchRounds,
+	type PostponeWanderingCheck,
+	type SetWanderingCheck,
+	type SkipWanderingCheck
+} from './wandering.ts';
 
 export type Deps = {
 	/** Rolls one die with the given number of sides, returning 1..sides. */
@@ -177,7 +186,10 @@ export type Command =
 	| SetCharacterHp
 	| LightTorch
 	| SetLightCounter
-	| SetAreaLight;
+	| SetAreaLight
+	| SetWanderingCheck
+	| PostponeWanderingCheck
+	| SkipWanderingCheck;
 
 export type EngineEvent =
 	| { type: 'sessionCreated'; sessionId: string; dungeonId: string }
@@ -218,7 +230,11 @@ export type EngineEvent =
 	| { type: 'lightCounterSet'; id: number }
 	| { type: 'torchLevelChanged'; seat: number; id: number; level: FlameLevel }
 	| { type: 'torchExtinguished'; seat: number; id: number }
-	| { type: 'areaLightSet'; areaId: string; light: AreaLight | null };
+	| { type: 'areaLightSet'; areaId: string; light: AreaLight | null }
+	/** Round `round` completed and a wandering monster check is due. Only the GM is told. */
+	| { type: 'wanderingCheckDue'; round: number }
+	| { type: 'wanderingCheckPostponed' }
+	| { type: 'wanderingCheckSkipped' };
 
 export type CommandResult =
 	| { ok: true; state: SessionState; events: EngineEvent[] }
@@ -257,7 +273,7 @@ export function applyCommand(
 	}
 
 	if (!state) return { ok: false, reason: 'No such session.' };
-	return keepTime(burnLights(dispatch(state, command, deps), deps), deps);
+	return keepTime(watchRounds(burnLights(dispatch(state, command, deps), deps)), deps);
 }
 
 function dispatch(state: SessionState, command: Exclude<Command, { type: 'createSession' }>, deps: Deps): CommandResult {
@@ -316,6 +332,12 @@ function dispatch(state: SessionState, command: Exclude<Command, { type: 'create
 			return setLightCounter(state, command, deps);
 		case 'setAreaLight':
 			return setAreaLight(state, command);
+		case 'setWanderingCheck':
+			return setWanderingCheck(state, command, deps);
+		case 'postponeWanderingCheck':
+			return postponeWanderingCheck(state, command);
+		case 'skipWanderingCheck':
+			return skipWanderingCheck(state, command);
 	}
 }
 

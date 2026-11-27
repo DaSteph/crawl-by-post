@@ -15,6 +15,8 @@
 	import ChallengeForm from '#lib/turn/ChallengeForm.svelte';
 	import ChallengePrompt from '#lib/turn/ChallengePrompt.svelte';
 	import TimeoutPrompt from '#lib/turn/TimeoutPrompt.svelte';
+	import WanderingPrompt from '#lib/turn/WanderingPrompt.svelte';
+	import { nextInOrder } from '#lib/engine/wandering.ts';
 	import { MAX_TURN_TIMEOUT_HOURS, MIN_TURN_TIMEOUT_HOURS } from '#lib/engine/timeouts.ts';
 	import CopyLink from '#lib/CopyLink.svelte';
 	import CharacterCard from '#lib/character/CharacterCard.svelte';
@@ -50,6 +52,12 @@
 	);
 	/** Seats standing in an area without light. */
 	const darkSeats = $derived(mapView?.tokens.filter((t) => t.dark).map((t) => t.seat) ?? []);
+	/** GM: where a wandering monster lands by default: the area of the player in (or just out of) the spotlight. */
+	const ownOrSpotlightArea = $derived.by(() => {
+		const s = data.crawl?.spotlight;
+		const seat = s ? (s.kind === 'gm' ? s.afterSeat : s.seat) : null;
+		return mapView?.tokens.find((t) => t.seat === seat)?.area ?? mapView?.tokens[0]?.area ?? null;
+	});
 	const focusCell = $derived(ownToken?.cell ?? mapView?.tokens.find((t) => t.spotlight)?.cell ?? null);
 
 	function areaName(id: string) {
@@ -103,6 +111,9 @@
 	const challengeSheet = $derived(
 		visitor.role === 'gm' && spotlight?.kind === 'gm' ? (sheetBySeat.get(spotlight.afterSeat) ?? null) : null
 	);
+	/** GM: the wandering monster check waiting for a decision. */
+	const wanderingCheck = $derived(visitor.role === 'gm' ? (crawl?.wanderingCheck ?? null) : null);
+	let placingWandering = $state(false);
 	const nameOf = (seat: number) => data.people.find((p) => p.seat === seat)?.name ?? text.session.player(seat);
 	const turnLine = $derived.by(() => {
 		if (holder === null) return null;
@@ -404,6 +415,15 @@
 				error={form?.resolveError ?? null}
 			/>
 		{/if}
+		{#if wanderingCheck && crawl}
+			<WanderingPrompt
+				check={wanderingCheck}
+				players={crawl.order.map((seat) => ({ seat, name: nameOf(seat) }))}
+				defaultSeat={spotlight?.kind === 'gm' ? nextInOrder(crawl.order, spotlight.afterSeat) : null}
+				preConsentSeat={spotlight?.kind === 'gm' && spotlight.preConsent ? spotlight.afterSeat : null}
+				error={form?.wanderingError ?? null}
+			/>
+		{/if}
 		{#if challengeSheet && spotlight?.kind === 'gm'}
 			<details class="challenge" open={spotlight.preConsent ?? false}>
 				<summary>
@@ -444,6 +464,44 @@
 			error={form?.monsterError ?? null}
 			errorFor={form?.monsterId ?? null}
 		/>
+		{#if mapView.wandering.length}
+			<details open={Boolean(form?.wanderingPlaceError)}>
+				<summary><span>{text.wandering.placeTitle}</span></summary>
+				<div class="stack-sm">
+					<p class="muted small">{text.wandering.placeHint}</p>
+					{#each mapView.wandering as m (m.index)}
+						<form
+							method="POST"
+							action="?/placeMonster"
+							class="row wrap start"
+							use:enhance={() => {
+								placingWandering = true;
+								return async ({ update }) => {
+									await update({ reset: false });
+									placingWandering = false;
+								};
+							}}
+						>
+							<input type="hidden" name="index" value={m.index} />
+							<input type="hidden" name="wandering" value="1" />
+							<label class="small" for="wandering-area-{m.index}">{text.wandering.areaLabel}</label>
+							<select id="wandering-area-{m.index}" name="area" required>
+								{#each mapView.areas as a (a.id)}
+									<option value={a.id} selected={a.id === ownOrSpotlightArea}>{areaName(a.id)}</option>
+								{/each}
+							</select>
+							<button class="button secondary" disabled={placingWandering}>
+								{text.wandering.place(`${m.name} (${m.label})`)}
+							</button>
+							<span class="muted small">{m.count}</span>
+						</form>
+					{/each}
+					{#if form?.wanderingPlaceError}
+						<p class="error" role="alert">{form.wanderingPlaceError}</p>
+					{/if}
+				</div>
+			</details>
+		{/if}
 	</section>
 {/if}
 
